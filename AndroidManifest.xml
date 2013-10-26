@@ -9,7 +9,7 @@
         android:required="true"/>
     
     <uses-sdk
-        android:minSdkVersion="10"
+        android:minSdkVersion="11"
         android:targetSdkVersion="17" />
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN"/>
     <uses-permission android:name="android.permission.BLUETOOTH"/>
@@ -17,6 +17,10 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
     <uses-permission android:name="com.google.android.providers.gsf.permission.READ_GSERVICES"/>
+    <uses-permission android:name="com.example.project.package.permission.MAPS_RECEIVE"/>
+    <permission
+        android:name="com.example.project.package.permission.MAPS_RECEIVE"
+        android:protectionLevel="signature"/>
     
 
     <application
@@ -34,7 +38,7 @@
             </intent-filter>
            
         </activity>
-        <meta-data android:name="com.google.android.maps.v2.API_KEY" android:value="AIzaSyDZnmpE50fQvzf0AuAn_hdRZNhA1Xpocek"/>
+        <meta-data android:name="com.google.android.maps.v2.API_KEY" android:value="AIzaSyC33O7yVXOX4UK3SWDTN_92Puwucw76Uhw"/>
     </application>
 
 </manifest>
