@@ -39,6 +39,7 @@ public class Map extends Activity {
 	
 	//Taking gps coordinates from bbb(c file) to this function
 	public void markPlace(LatLng point, String lbl){
+		Log.i("isoblue","hello");
 		mMap.addMarker(new MarkerOptions()
         .position(point)
         .title(lbl));
