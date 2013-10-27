@@ -14,6 +14,7 @@ import com.google.android.gms.maps.model.PolygonOptions;
 import android.os.Bundle;
 import android.app.Activity;
 import android.graphics.Color;
+import android.util.Log;
 import android.view.Menu;
 
 public class Map extends Activity {
@@ -38,6 +39,7 @@ public class Map extends Activity {
 	
 	//Taking gps coordinates from bbb(c file) to this function
 	public void markPlace(LatLng point, String lbl){
+		Log.i("isoblue","hello");
 		mMap.addMarker(new MarkerOptions()
         .position(point)
         .title(lbl));
@@ -54,13 +56,12 @@ public class Map extends Activity {
         		new LatLng(42,-84))
         .strokeWidth(1.00f));
 	}
-
 	
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
 		
-		getMenuInflater().inflate(R.menu.map, menu);
-		return true;
+		getMenuInflater().inflate(R.menu.map_actions, menu);
+		return super.onCreateOptionsMenu(menu);
 	}
 
 }
