@@ -53,13 +53,12 @@ public class Map extends Activity {
         		new LatLng(42,-84))
         .strokeWidth(1.00f));
 	}
-
 	
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
 		
-		getMenuInflater().inflate(R.menu.map, menu);
-		return true;
+		getMenuInflater().inflate(R.menu.map_actions, menu);
+		return super.onCreateOptionsMenu(menu);
 	}
 
 }

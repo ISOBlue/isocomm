@@ -1,0 +1,6 @@
+AndroidManifest.xml
+*.apk
+project.properties
+R.txt
+.classpath
+R.java
