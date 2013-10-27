@@ -14,6 +14,7 @@ import com.google.android.gms.maps.model.PolygonOptions;
 import android.os.Bundle;
 import android.app.Activity;
 import android.graphics.Color;
+import android.util.Log;
 import android.view.Menu;
 
 public class Map extends Activity {
