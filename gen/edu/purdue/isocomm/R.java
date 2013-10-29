@@ -179,11 +179,12 @@ containing a value of this type.
         public static final int common_signin_btn_text_normal_light=0x7f020015;
         public static final int common_signin_btn_text_pressed_dark=0x7f020016;
         public static final int common_signin_btn_text_pressed_light=0x7f020017;
-        public static final int ic_launcher=0x7f020018;
-        public static final int ic_plusone_medium_off_client=0x7f020019;
-        public static final int ic_plusone_small_off_client=0x7f02001a;
-        public static final int ic_plusone_standard_off_client=0x7f02001b;
-        public static final int ic_plusone_tall_off_client=0x7f02001c;
+        public static final int eye=0x7f020018;
+        public static final int ic_launcher=0x7f020019;
+        public static final int ic_plusone_medium_off_client=0x7f02001a;
+        public static final int ic_plusone_small_off_client=0x7f02001b;
+        public static final int ic_plusone_standard_off_client=0x7f02001c;
+        public static final int ic_plusone_tall_off_client=0x7f02001d;
     }
     public static final class id {
         public static final int action_search=0x7f050007;
@@ -197,6 +198,7 @@ containing a value of this type.
     }
     public static final class layout {
         public static final int activity_map=0x7f030000;
+        public static final int devicelist=0x7f030001;
     }
     public static final class menu {
         public static final int map=0x7f090000;
@@ -297,6 +299,7 @@ containing a value of this type.
         public static final int common_signin_button_text_long=0x7f060012;
         public static final int connect=0x7f06001c;
         public static final int hello_world=0x7f06001b;
+        public static final int pick_device=0x7f06001d;
     }
     public static final class style {
         /** 

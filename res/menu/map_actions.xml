@@ -3,7 +3,8 @@
       xmlns:yourapp="http://schemas.android.com/apk/res-auto" >
     <item android:id="@+id/action_search"
           android:title="@string/connect"
-          android:showAsAction="ifRoom" />
+          android:showAsAction="always|withText" 
+          android:icon="@drawable/eye"/>
 
 </menu>
 
