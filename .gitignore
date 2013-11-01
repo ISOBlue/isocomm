@@ -126,3 +126,23 @@ bin/classes/edu/purdue/isocomm/R$dimen.class
 bin/classes/edu/purdue/isocomm/R$attr.class
 
 bin/classes/edu/purdue/isocomm/R$attr.class
+
+*.xml
+
+*.class
+
+gen/com/google/android/gms/R.java
+
+gen/edu/purdue/isocomm/R.java
+
+gen/edu/purdue/isocomm/R.java
+
+bin/classes/com/google/android/gms/R$color.class
+
+bin/classes/edu/purdue/isocomm/R$color.class
+
+bin/classes/com/google/android/gms/R$color.class
+
+bin/AndroidManifest.xml
+
+bin/AndroidManifest.xml
