@@ -9,7 +9,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:padding="15dp"
-        android:text="Choose an ISOBlue-Enabled Device"
+        android:text="Choose an ISOBlue-Enabled Device!"
         android:textAppearance="?android:attr/textAppearanceLarge" 
         android:background="@color/isoblue"
         android:textColor="@color/white"/>
