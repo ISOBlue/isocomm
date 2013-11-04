@@ -1,5 +1,7 @@
 package edu.purdue.isocomm;
 
+import java.io.ByteArrayOutputStream;
+
 import org.isoblue.isobus.ISOBUSSocket;
 import org.isoblue.isobus.Message;
 
@@ -13,52 +15,81 @@ import android.util.Log;
 
 public class NMEAUtil {
 	Context mContext;
+	private int BYTESIZE = 8;
 	public NMEAUtil(Context context, Handler handler) {
 		mContext = context;
 	}
 	
 	public void processMessages(ISOBUSSocket sck){
 		Message message = null;
-		int total_data_byte = 1;
+		int total_data_byte = 6; 
 		boolean reading_data = false; 
 		int remaining_byte_in_msg = 8;
-		byte[] mydata;
+		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+		byte[] mydata = null;
+		byte[] cur_msg = null;
 		
-	 	while(remaining_byte_in_msg > 0){
-	 		   try {
-	     		    message = sck.read();
-	     		} catch(InterruptedException e) {
-	     		    // Thrown if the thread calling read can is interrupted for some reason
-	     			Log.e("ISOBLUE","Unable to read socket");
-	     		}
+	 	while(true){ //keep reading 
+	 		  
+	 		   if(remaining_byte_in_msg == 8){ //if we havent read anything in this frame yet
+	 			   try {
+		     		    message = sck.read();  //read it
+		     		} catch(InterruptedException e) {
+		     			Log.e("ISOBLUE","Unable to read socket for some reason");
+		     		}
+		     	   
+		     	   Log.i("ISOBLUE",message.toString());
+		     	    	   
+		     	   cur_msg = message.getData(); //fit it in a byte array
+		     	   
+		     	   byte msg_head = cur_msg[0]; //read the #< FRAME COUNT BYTE >
+		     	   --remaining_byte_in_msg; //number subsequent bytes we need to read 
+		     	   
+		     	   //process header, if this is the first frame
+		     	   if(!reading_data && msg_head == 0x0){ 
+		     		   
+		     		   //look for the second byte, it contains the length of the 
+		     		   //entire message we need to construct
+		     		   //that is the messages in [yellow] of the reference diagram
+		     		   
+		     		    total_data_byte = cur_msg[1];
+		     		    Log.i("ISOBLUE","Total Data Byte = " + total_data_byte);
+		     		    reading_data = true;
+		     		    mydata = new byte[total_data_byte];
+		     		    
+		     		    --remaining_byte_in_msg;
+		     		    --total_data_byte;       
+		     	   }
+	 		   }
+	 		   	 
 	     	   
-	     	   Log.i("ISOBLUE",message.toString());
-	     	    	   
-	     	   byte[] cur_msg = message.getData(); //read this message
-	     	   
-	     	   byte msg_head = cur_msg[0]; //read the first byte
-	     	   remaining_byte_in_msg--;
-	     	  
-	     	   //process header
-	     	   if(msg_head == 0x0 && !reading_data){ 
-	     		   //look for the second byte, it contains the length of the 
-	     		   //entire message we need to construct
-	     		   //that is the messages in [yellow] of the reference diagram
-	     		    total_data_byte = cur_msg[1];
-	     		    Log.i("ISOBLUE","Total Data Byte = " + total_data_byte);
-	     		    reading_data = true;
-	     		    mydata = new byte[total_data_byte];
-	     	   }
-	     	   
-	     	   //process data
+	     	   //process data in this message
 	     	   if(reading_data){
 	     		   Log.i("ISOBLUE","Reading yellow data block = " + total_data_byte);
 	     		   while(remaining_byte_in_msg > 0){
 	     			   //read the rest of the bytes in the current message
 	     			   //and concat it 
+	     			  byte buffer = cur_msg[BYTESIZE - remaining_byte_in_msg]; 
+	     			  outputStream.write(buffer);
+	     			  
+	     			  --remaining_byte_in_msg;
+	     			  --total_data_byte;
 	     		   }
 	     	   }
 	     	   
-	 	}
+	     	   //flag for "read one more message" 
+	     	   // if we are out of stuff to process
+	     	   if(remaining_byte_in_msg == 0){
+	     		  remaining_byte_in_msg = 8; 
+	     	   }
+	     	   
+	     	   //if we have read all the data byte 
+	     	   //as specified in Data Byte Count
+	     	   if(total_data_byte == 0){
+	     		   mydata = outputStream.toByteArray();
+	     		   break;
+	     	   }
+	     	   
+	  	 	}
 	}
 }
