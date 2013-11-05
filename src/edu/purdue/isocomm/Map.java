@@ -62,7 +62,7 @@ public class Map extends Activity {
 		mMap = ((MapFragment) getFragmentManager().findFragmentById(R.id.map)).getMap(); //init map
 		mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(places.get("ee"), 5.00f)); //set default camera zoom and location
 		labelStuff();
-//		mMap.setMapType(mMap.MAP_TYPE_SATELLITE);
+		
 	}
 	
 	//Handles incoming GPS coordinates from BBB sent over bluetooth
@@ -86,6 +86,7 @@ public class Map extends Activity {
 	}
 	
 	private void Handle_SimulateStuff(){
+		mMap.setMapType(GoogleMap.MAP_TYPE_SATELLITE);
 		mMap.addPolygon(new PolygonOptions()
         .add(new LatLng(41.5016, -86.19123),  // 41¡ 5.016', -86¡ 19.123'
         		new LatLng(41.5055,-86.19123),  //41¡ 5.055', -86¡ 16.805'
@@ -119,20 +120,22 @@ public class Map extends Activity {
 			foundDevices_itemDisplayText[i] = fd.getName() + " - " + fd.getAddress();
 		}
 		
-		//Assign it to devListBox so that it can populate its list
-		devListbox.items = foundDevices_itemDisplayText;
-		devListbox.bindToRealDevices(foundDevices, connector);
-		devListbox.mContext = Map.this;
-		
-		//Android requires that all UI activities do not hang up the app's main thread
-		//so it must be processed on the separate UI thread
-		//TODO: this could get a bit messy overtime, there may be more elegant way to accomplish this.
-		runOnUiThread(new Runnable() {
-            public void run() {
-            	//msg_discovering.show();
-            	devListbox.show(getFragmentManager(), "btdev");
-            }
-        });
+
+		if(connector.ConnectorStatus == BTAgent.STATUS_BT_ON){
+			//Assign it to devListBox so that it can populate its list
+			devListbox.items = foundDevices_itemDisplayText;
+			devListbox.bindToRealDevices(foundDevices, connector);
+			devListbox.mContext = Map.this;
+			//Android requires that all UI activities do not hang up the app's main thread
+			//so it must be processed on the separate UI thread
+			//TODO: this could get a bit messy overtime, there may be more elegant way to accomplish this.
+			runOnUiThread(new Runnable() {
+	            public void run() {
+	            	//msg_discovering.show();
+	            	devListbox.show(getFragmentManager(), "btdev");
+	            }
+	        });
+		}
 	}
 	
 	@Override

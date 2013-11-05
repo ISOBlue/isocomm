@@ -22,24 +22,49 @@ import android.app.ProgressDialog;
 
 public class BTAgent {
 	private final BluetoothAdapter mBluetoothAdapter;
+	public int ConnectorStatus;
 	private final Handler mHandler;
 	private final Context mContext;
 	public ISOBlueDevice ibdevice;
+	public static int STATUS_NO_BT = 2;
+	public static int STATUS_BT_OFF = 1;
+	public static int STATUS_BT_ON = 0;
 
 	public BTAgent(Context context, Handler handler) {
 		mContext = context;
 		mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
 		mHandler = handler;
 		if (mBluetoothAdapter == null) {
-			// Add Toast Message here
-			Log.i("ISOCOMM","Bluetooth is not on.");
+			Log.i("ISOCOMM","Bluetooth is not supported.");
+			ConnectorStatus = STATUS_NO_BT;
 		}else{
-			Log.i("ISOCOMM","Bluetooth is ON. We are good to go.");
+			if (!mBluetoothAdapter.isEnabled()) {
+		        //bluetooth is off
+		 	    ConnectorStatus = STATUS_BT_OFF;
+		    }else{ //bluetooth is on
+		    	Log.i("ISOCOMM","Bluetooth is ON. We are good to go.");
+		    	ConnectorStatus = STATUS_BT_ON;
+		    }		
 		}
 
 	}
 	
 	public void populateWithPairedDevices(ArrayList<BluetoothDevice> j){
+		if(ConnectorStatus == STATUS_BT_OFF){
+			Toast toast = Toast.makeText(mContext, 
+					"Bluetooth is off. Please turn it on.",
+					Toast.LENGTH_SHORT);
+	 	    toast.show();
+			return;
+		}
+		if(ConnectorStatus == STATUS_NO_BT){
+			Toast toast = Toast.makeText(mContext, 
+					"Bluetooth is not supported by your device. Please consult your manufacturer or the IRS.",
+					Toast.LENGTH_SHORT);
+	 	    toast.show();
+			return;
+		}
+		
 		Log.i("ISOCOMM","Listing paired devices..");
 		Set<BluetoothDevice> pairedDevices = mBluetoothAdapter.getBondedDevices();
 //		// If there are paired devices
@@ -70,6 +95,7 @@ public class BTAgent {
 		    // The BluetoothDevice could not be connected to, or it is not an ISOBlue
 			Toast toast = Toast.makeText(mContext, "Device offline or is not an ISOBLUE device",Toast.LENGTH_SHORT);
      	    toast.show();
+     	    ibd = null;
 		}
 		
 		return ibd;

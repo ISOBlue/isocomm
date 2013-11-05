@@ -53,6 +53,9 @@ public class DeviceSelectDialog extends DialogFragment {
 	            	   
 	            	   //obtain ISOBLUE DEVICE, ibd
 	            	   ISOBlueDevice ibd = BTconnector.getIBDevice(btdevices.get(which));
+	            	   if(ibd == null){
+	            		   return;
+	            	   }
 	            	   NMEAUtil parser = new NMEAUtil(mContext, null);
 	            	   ISOBUSSocket impSocket = null;
 	            	   
