@@ -10,6 +10,11 @@ import org.isoblue.isobus.ISOBUSSocket;
 import org.isoblue.isobus.Message;
 import org.isoblue.isobus.PGN;
 
+import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.MapFragment;
+import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.MarkerOptions;
+
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
@@ -18,22 +23,28 @@ import android.bluetooth.BluetoothDevice;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.os.Bundle;
+import android.os.Handler;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.Toast;
 
-import edu.purdue.isocomm.NMEAUtil;
+//import edu.purdue.isocomm.NMEAUtil;
 
 public class DeviceSelectDialog extends DialogFragment {
 	public CharSequence[] items = null;
 	public Context mContext;
+	public Handler postman;
 	private ArrayList<BluetoothDevice> btdevices;
 	private BTAgent BTconnector;
 	
 	public void bindToRealDevices(ArrayList<BluetoothDevice> b, BTAgent m){
 		btdevices = b;
 		BTconnector = m;
+	}
+	
+	public void setHandler(Handler h){
+		postman = h;
 	}
 	
 	@Override
@@ -45,30 +56,26 @@ public class DeviceSelectDialog extends DialogFragment {
         final View modifview = inflater.inflate(R.layout.choose_device_title,null);
 	    builder.setCustomTitle(modifview);
 	    
-//	    TODO: Use builder.setView();
+	    //TODO: Use builder.setView();
 	    builder.setItems(items, new DialogInterface.OnClickListener() {
 	    	
-	               public void onClick(DialogInterface dialog, int which) {
-	            	   // The 'which' argument contains the index position
-	            	   
-	            	   //obtain ISOBLUE DEVICE, ibd
-	            	   ISOBlueDevice ibd = BTconnector.getIBDevice(btdevices.get(which));
-	            	   if(ibd == null){
-	            		   return;
-	            	   }
-	            	   NMEAUtil parser = new NMEAUtil(mContext, null);
-	            	   ISOBUSSocket impSocket = null;
-	            	   
-						try {
-							impSocket = new ISOBUSSocket(ibd.getImplementBus(), null, null);
-						} catch (IOException e1) {
-							// TODO Auto-generated catch block
-							e1.printStackTrace();
-						}
+	        public void onClick(DialogInterface dialog, int which) {
+	        	ISOBlueDevice ibd = BTconnector.getIBDevice(btdevices.get(which));
+	        	
+	        	try {
+					ISOBUSSocket impSocket = new ISOBUSSocket(ibd.getImplementBus(), null, null);
+					
+					//Dispatch messages to Map 
+					postman.obtainMessage(Map.BEGIN_COMMUNICATE,
+							-1, -1, impSocket).sendToTarget();
 				
-					   parser.processMessages(impSocket);
-
-	               }
+					
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+	        	
+	        }
 	    });
 	    return builder.create();
 	}
