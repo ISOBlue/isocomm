@@ -1,5 +1,6 @@
 package edu.purdue.isocomm;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -19,6 +20,7 @@ import android.R.menu;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.bluetooth.BluetoothDevice;
 import android.graphics.Color;
@@ -51,6 +53,7 @@ public class Map extends Activity {
 	
 	
 	//Postman deliver messages from DeviceSelectDialog to Map activity
+	@SuppressLint("HandlerLeak")
 	private final Handler postman = new Handler() {
 		@Override
 		public void handleMessage(Message msg) {
@@ -70,24 +73,33 @@ public class Map extends Activity {
 								org.isoblue.isobus.Message message = null;
 								int msg_count = 0;
 								
-								while(msg_count < 10){
+								while(msg_count < 1000){
 									try {
 										message = imsock.read();
+//										if(!message.getPgn().toString().equals("129029")){
+//											Log.i("POSTMAN","Skipping PGN" + message.getPgn().toString());
+//											continue;
+//										}
 										msg_count++;
 										
 										final int coord_adder = msg_count;
+										final org.isoblue.isobus.Message bfr = message;
 										
 										runOnUiThread(new Runnable() {
 								            public void run() {
-								            	markPlace(new LatLng(coord_adder + 40.42262549999998, -86.92454150000002),
-														"POSTMAN!");
+								            	markPlace(new LatLng(Math.random() + 40.12262549999998, Math.random() + -89.92454150000002),
+								            			bfr.getData().toString());
 								            }
 								        });
+										
+										//slow it down, demo only
+										Thread.sleep(500);
 									} catch (InterruptedException e) {
-										// TODO Auto-generated catch block
+										//Interuption not thrown!!
 										Log.i("postman","Unable to read from BT");
 										e.printStackTrace();
 									}
+									
 									Log.i("postman", message.toString());
 								}
 							}

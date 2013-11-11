@@ -9,6 +9,7 @@ import org.isoblue.isoblue.ISOBlueDevice;
 import org.isoblue.isobus.ISOBUSSocket;
 import org.isoblue.isobus.Message;
 import org.isoblue.isobus.PGN;
+import org.isoblue.isobus.PGN.InvalidPGNException;
 
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapFragment;
@@ -37,7 +38,7 @@ public class DeviceSelectDialog extends DialogFragment {
 	public Handler postman;
 	private ArrayList<BluetoothDevice> btdevices;
 	private BTAgent BTconnector;
-	
+
 	public void bindToRealDevices(ArrayList<BluetoothDevice> b, BTAgent m){
 		btdevices = b;
 		BTconnector = m;
@@ -61,7 +62,20 @@ public class DeviceSelectDialog extends DialogFragment {
 	    	
 	        public void onClick(DialogInterface dialog, int which) {
 	        	ISOBlueDevice ibd = BTconnector.getIBDevice(btdevices.get(which));
+	        	Set<PGN> pgns = new HashSet<PGN>();
 	        	
+	        	//BTAgent already handles bluetooth failure
+         	   if(ibd == null){
+         		   return;
+         	   }
+         	   
+//	        	try {
+//	        	    pgns.add(new PGN(129029));
+//	        	} catch(InvalidPGNException e) {
+//	        	    // The number integerValue was not a valid ISOBUS PGN
+//	        	    // This Exception does not have to be caught
+//	        	}
+
 	        	try {
 					ISOBUSSocket impSocket = new ISOBUSSocket(ibd.getImplementBus(), null, null);
 					
