@@ -49,6 +49,26 @@ public class Map extends Activity {
 		
 	}
 	
+	public class PGNPosData {
+		
+		public byte SID; //SID
+		public int date; //days since january 1, 1970
+		public int time; //second since midnight
+		public long latitude; //latitude
+		public long longitude; //longitude
+		public long altitude; //altitude
+		public byte GNSStypeAndMethod; //GNSS type and GNSS Method
+		public byte integrityAndReserved; //Integreity and Reserved Variables
+		public byte numOfSVs; //number of satellites used
+		public int HDOP; //horizontal dilution of precision
+		public int PDOP; //probable dilution of precision
+		public int GeoidalSep; //Geoidal Seperation
+		public int ref; //Reference Stations number, type, and ID
+		public int age; //age of DGNSS Corrections
+		
+		/* See Document for alex for more on these values above */		
+	}
+	
 	
 	
 	
