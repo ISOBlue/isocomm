@@ -242,7 +242,9 @@ public class Map extends Activity {
 	//As of right now only latitude and longitude are included. 
 	public boolean GNSSData(Message[] msgs, PGNPosData )
 	{
-		long latitude = 0;, longitude = 0;
+		long latitude = 0;, longitude = 0; //variables to hold the values from the data block
+		
+		//rebuilds the latitude from data block from pgn 129029
 		latitude = msgs[1].data[2];
 		latitude = latitude | ((int)msgs[1].data[3] << 8);
 		latitude = latitude | ((int)msgs[1].data[4] << 16);
@@ -252,6 +254,7 @@ public class Map extends Activity {
 		latitude = latitude | ((int)msgs[2].data[1] << 40);
 		latitude = latitude | ((int)msgs[2].data[2] << 40);
 		
+		//rebuilds the longitude from data block from pgn 129029
 		longitude = msgs[2].data[3];
 		longitude = longitude | ((int)msgs[2].data[4] << 8);
 		longitude = longitude | ((int)msgs[2].data[5] << 16);
@@ -261,8 +264,14 @@ public class Map extends Activity {
 		longitude = longitude | ((int)msgs[3].data[3] << 40);
 		longitude = longitude | ((int)msgs[3].data[4] << 40);
 		
+		//Convert to double form
 		double final_longitude = longitude * 0.0000000000000001;
 		double final_latitude = latitude * 0.0000000000000001;
+		
+		
+		//Should save the longitude and latitude in a file, along with a time stamp to help with replaying.
+		
+		//Also should pass the values somehow to be used with google maps. 
 		
 		return true;
 	}
