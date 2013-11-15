@@ -235,5 +235,35 @@ public class Map extends Activity {
 	    	}
 	    	return true;
 	    }
-
+	
+	@Override
+	//You need to pass it all 7 messages from the BBB
+	//The PGN for these values must be 129029, and NOT 129025 as it is not yet supported
+	//As of right now only latitude and longitude are included. 
+	public boolean GNSSData(Message[] msgs, PGNPosData )
+	{
+		long latitude = 0;, longitude = 0;
+		latitude = msgs[1].data[2];
+		latitude = latitude | ((int)msgs[1].data[3] << 8);
+		latitude = latitude | ((int)msgs[1].data[4] << 16);
+		latitude = latitude | ((int)msgs[1].data[5] << 24);
+		latitude = latitude | ((int)msgs[1].data[6] << 32);
+		latitude = latitude | ((int)msgs[1].data[7] << 40);
+		latitude = latitude | ((int)msgs[2].data[1] << 40);
+		latitude = latitude | ((int)msgs[2].data[2] << 40);
+		
+		longitude = msgs[2].data[3];
+		longitude = longitude | ((int)msgs[2].data[4] << 8);
+		longitude = longitude | ((int)msgs[2].data[5] << 16);
+		longitude = longitude | ((int)msgs[2].data[6] << 24);
+		longitude = longitude | ((int)msgs[2].data[7] << 32);
+		longitude = longitude | ((int)msgs[3].data[2] << 40);
+		longitude = longitude | ((int)msgs[3].data[3] << 40);
+		longitude = longitude | ((int)msgs[3].data[4] << 40);
+		
+		double final_longitude = longitude * 0.0000000000000001;
+		double final_latitude = latitude * 0.0000000000000001;
+		
+		return true;
+	}
 }
