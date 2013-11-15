@@ -251,8 +251,8 @@ public class Map extends Activity {
 		latitude = latitude | ((int)msgs[1].data[5] << 24);
 		latitude = latitude | ((int)msgs[1].data[6] << 32);
 		latitude = latitude | ((int)msgs[1].data[7] << 40);
-		latitude = latitude | ((int)msgs[2].data[1] << 40);
-		latitude = latitude | ((int)msgs[2].data[2] << 40);
+		latitude = latitude | ((int)msgs[2].data[1] << 48);
+		latitude = latitude | ((int)msgs[2].data[2] << 56);
 		
 		//rebuilds the longitude from data block from pgn 129029
 		longitude = msgs[2].data[3];
@@ -261,8 +261,8 @@ public class Map extends Activity {
 		longitude = longitude | ((int)msgs[2].data[6] << 24);
 		longitude = longitude | ((int)msgs[2].data[7] << 32);
 		longitude = longitude | ((int)msgs[3].data[2] << 40);
-		longitude = longitude | ((int)msgs[3].data[3] << 40);
-		longitude = longitude | ((int)msgs[3].data[4] << 40);
+		longitude = longitude | ((int)msgs[3].data[3] << 48);
+		longitude = longitude | ((int)msgs[3].data[4] << 56);
 		
 		//Convert to double form
 		double final_longitude = longitude * 0.0000000000000001;
