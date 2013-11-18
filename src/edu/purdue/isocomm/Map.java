@@ -243,7 +243,7 @@ public class Map extends Activity {
 	// not sure how we want save teh final latitude and longitude
 	public boolean GNSSData(Message[] msgs, PGNPosData )
 	{
-		long latitude = 0;, longitude = 0; //variables to hold the values from the data block
+		long latitude = 0, longitude = 0; //variables to hold the values from the data block
 		
 		//rebuilds the latitude from data block from pgn 129029
 		latitude = msgs[1].data[2];
@@ -289,4 +289,8 @@ public class Map extends Activity {
 	//store lat, long, and timestamp
 
 	//plot the data
+
+	//YIELD PGN 65488
+	//FIRST TWO BYTES IN DATA FIELD ARE YIELD DATA
+	//multiply by 1.89545096358038e-5	bushels / sec
 }
