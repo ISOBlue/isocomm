@@ -163,10 +163,10 @@ public class Map extends Activity {
 	private void Handle_SimulateStuff(){
 		mMap.setMapType(GoogleMap.MAP_TYPE_SATELLITE);
 		mMap.addPolygon(new PolygonOptions()
-        .add(new LatLng(41.5016, -86.19123),  // 41¡ 5.016', -86¡ 19.123'
-        		new LatLng(41.5055,-86.19123),  //41¡ 5.055', -86¡ 16.805'
-        		new LatLng(41.3296,-86.846), //41¡ 3.285', -86¡ 16.846'
-        		new LatLng(41.3296,-86.18747)) //41¡ 3.296', -86¡ 18.747'
+        .add(new LatLng(41.5016, -86.19123),  // 41ï¿½ 5.016', -86ï¿½ 19.123'
+        		new LatLng(41.5055,-86.19123),  //41ï¿½ 5.055', -86ï¿½ 16.805'
+        		new LatLng(41.3296,-86.846), //41ï¿½ 3.285', -86ï¿½ 16.846'
+        		new LatLng(41.3296,-86.18747)) //41ï¿½ 3.296', -86ï¿½ 18.747'
 
         .strokeWidth(3.00f)
         .strokeColor(Color.RED));
@@ -240,6 +240,7 @@ public class Map extends Activity {
 	//You need to pass it all 7 messages from the BBB
 	//The PGN for these values must be 129029, and NOT 129025 as it is not yet supported
 	//As of right now only latitude and longitude are included. 
+	// not sure how we want save teh final latitude and longitude
 	public boolean GNSSData(Message[] msgs, PGNPosData )
 	{
 		long latitude = 0;, longitude = 0; //variables to hold the values from the data block
@@ -264,7 +265,7 @@ public class Map extends Activity {
 		longitude = longitude | ((int)msgs[3].data[3] << 48);
 		longitude = longitude | ((int)msgs[3].data[4] << 56);
 		
-		//Convert to double form
+		//Convert latitude and longitude to double form
 		double final_longitude = longitude * 0.0000000000000001;
 		double final_latitude = latitude * 0.0000000000000001;
 		
@@ -275,4 +276,17 @@ public class Map extends Activity {
 		
 		return true;
 	}
+
+	//new function to save pgns
+
+	//if PGN == 129029
+	//collect or store all 7 messages of the packet or pass them to the next function
+	//grab latitude and longitude from the data packets from the messages
+	//pass the time stamp as well to the data
+	//store the latitude, longitude, and timestamp to a file of some sort
+	//plot the data from this file using markers or tiles. 
+
+	//store lat, long, and timestamp
+
+	//plot the data
 }
