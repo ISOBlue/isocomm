@@ -69,15 +69,15 @@ public class DeviceSelectDialog extends DialogFragment {
          		   return;
          	   }
          	   
-//	        	try {
-//	        	    pgns.add(new PGN(129029));
-//	        	} catch(InvalidPGNException e) {
-//	        	    // The number integerValue was not a valid ISOBUS PGN
-//	        	    // This Exception does not have to be caught
-//	        	}
+         	   //Filtering
+	        	try {
+	        	    pgns.add(new PGN(129029));
+	        	} catch(InvalidPGNException e) {
+	        		Log.i("ISOBLUE","Error while adding PGN to filter");
+	        	}
 
 	        	try {
-					ISOBUSSocket impSocket = new ISOBUSSocket(ibd.getImplementBus(), null, null);
+					ISOBUSSocket impSocket = new ISOBUSSocket(ibd.getImplementBus(), null, pgns);
 					
 					//Dispatch messages to Map 
 					postman.obtainMessage(Map.BEGIN_COMMUNICATE,

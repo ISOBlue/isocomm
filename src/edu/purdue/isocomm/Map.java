@@ -76,10 +76,9 @@ public class Map extends Activity {
 								while(msg_count < 1000){
 									try {
 										message = imsock.read();
-//										if(!message.getPgn().toString().equals("129029")){
-//											Log.i("POSTMAN","Skipping PGN" + message.getPgn().toString());
-//											continue;
-//										}
+
+										//BBB <--- https://dl.dropboxusercontent.com/u/41564792/data.zip
+										
 										msg_count++;
 										
 										final int coord_adder = msg_count;
