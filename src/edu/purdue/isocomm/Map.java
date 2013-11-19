@@ -277,6 +277,22 @@ public class Map extends Activity {
 		return true;
 	}
 
+	//Given PGN 65488 message block (it is only one message)
+	//Will return the yield data stored in units bushels/sec
+	public double yieldData(Message msg)
+	{
+		int yield = 0;
+		yield = msg.data[0];
+		yield = yield | msg.data[1] << 8;
+
+		return (double) (yield * .0000189545096358038);
+
+		//YIELD PGN 65488
+		//FIRST TWO BYTES IN DATA FIELD ARE YIELD DATA
+		//multiply by 1.89545096358038e-5	bushels / sec
+
+	}
+	
 	//new function to save pgns
 
 	//if PGN == 129029
@@ -290,7 +306,4 @@ public class Map extends Activity {
 
 	//plot the data
 
-	//YIELD PGN 65488
-	//FIRST TWO BYTES IN DATA FIELD ARE YIELD DATA
-	//multiply by 1.89545096358038e-5	bushels / sec
 }
