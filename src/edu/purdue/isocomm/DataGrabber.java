@@ -34,7 +34,7 @@ public class DataGrabber {
 	//The PGN for these values must be 129029, and NOT 129025 as it is not yet supported
 	//As of right now only latitude and longitude are included. 
 	// not sure how we want save teh final latitude and longitude
-	public boolean GNSSData(org.isoblue.isobus.Message[] msgs, double yield)
+	public LatLng GNSSData(org.isoblue.isobus.Message[] msgs)
 	{
 		long latitude = 0, longitude = 0; //variables to hold the values from the data block
 		
@@ -71,10 +71,8 @@ public class DataGrabber {
 		double final_longitude = longitude * 0.0000000000000001;
 		double final_latitude = latitude * 0.0000000000000001;
 		
-		
-		//Might want to save this data, to be used later for replay values...might be unnecessary
-		//Also need to plot either at the end of this function or by calling another function.
-		return true;
+		LatLng point = new LatLng(final_latitude, final_longitude);
+		return point;
 	}
 
 	//Given PGN 65488 message block (it is only one message)
