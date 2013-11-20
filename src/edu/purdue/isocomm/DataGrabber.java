@@ -3,6 +3,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 
 import org.isoblue.isoblue.ISOBlueDevice;
 import org.isoblue.isobus.ISOBUSSocket;
@@ -48,28 +50,37 @@ public class DataGrabber {
 		byte[] dataBlock7 = msgs[6].getData();
 		
 		//rebuilds the latitude from data blocks extracted from pgn 129029's 7 messages
-		latitude = dataBlock2[2];
-		latitude = latitude | ((int)dataBlock2[3] << 8);
-		latitude = latitude | ((int)dataBlock2[4] << 16);
-		latitude = latitude | ((int)dataBlock2[5] << 24);
-		latitude = latitude | ((int)dataBlock2[6] << 32);
-		latitude = latitude | ((int)dataBlock2[7] << 40);
-		latitude = latitude | ((int)dataBlock3[1] << 48);
-		latitude = latitude | ((int)dataBlock3[2] << 56);
+
+		byte[] latData = new byte[] {dataBlock3[2], dataBlock3[1], dataBlock2[7], dataBlock2[6], dataBlock2[5], dataBlock2[4], dataBlock2[3],dataBlock2[2]};
+	    ByteBuffer latBuffer = ByteBuffer.wrap(latData);
+	    latBuffer.order(ByteOrder.LITTLE_ENDIAN);
+//		latitude = dataBlock2[2];
+//		latitude = latitude | (dataBlock2[3] << 8);
+//		latitude = latitude | (dataBlock2[4] << 16);
+//		latitude = latitude | (dataBlock2[5] << 24);
+//		latitude = latitude | (dataBlock2[6] << 32);
+//		latitude = latitude | (dataBlock2[7] << 40);
+//		latitude = latitude | (dataBlock3[1] << 48);
+//		latitude = latitude | (dataBlock3[2] << 56);
 		
+	    
 		//rebuilds the longitude very much like the latitiude
-		longitude = dataBlock3[3];
-		longitude = longitude | ((int)dataBlock3[4] << 8);
-		longitude = longitude | ((int)dataBlock3[5] << 16);
-		longitude = longitude | ((int)dataBlock3[6] << 24);
-		longitude = longitude | ((int)dataBlock3[7] << 32);
-		longitude = longitude | ((int)dataBlock4[2] << 40);
-		longitude = longitude | ((int)dataBlock4[3] << 48);
-		longitude = longitude | ((int)dataBlock4[4] << 56);
+		byte[] longData = new byte[] {dataBlock4[4], dataBlock4[3], dataBlock4[2], dataBlock3[7], dataBlock3[6], dataBlock3[5], dataBlock3[4], dataBlock3[3]};
+	    ByteBuffer longBuffer = ByteBuffer.wrap(longData);
+	    longBuffer.order(ByteOrder.LITTLE_ENDIAN);
+	    
+//		longitude = dataBlock3[3];
+//		longitude = longitude | (dataBlock3[4] << 8);
+//		longitude = longitude | (dataBlock3[5] << 16);
+//		longitude = longitude | (dataBlock3[6] << 24);
+//		longitude = longitude | (dataBlock3[7] << 32);
+//		longitude = longitude | (dataBlock4[2] << 40);
+//		longitude = longitude | (dataBlock4[3] << 48);
+//		longitude = longitude | (dataBlock4[4] << 56);
 		
 		//Convert latitude and longitude to double form
-		double final_longitude = longitude * 0.0000000000000001;
-		double final_latitude = latitude * 0.0000000000000001;
+		double final_longitude = longBuffer.getLong() * 0.0000000000000001;
+		double final_latitude = latBuffer.getLong() * 0.0000000000000001;
 		
 		LatLng point = new LatLng(final_latitude, final_longitude);
 		return point;
