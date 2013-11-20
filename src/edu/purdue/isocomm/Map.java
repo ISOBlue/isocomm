@@ -225,6 +225,5 @@ public class Map extends Activity {
 	    	}
 	    	return true;
 	    }
-	
 
 }
