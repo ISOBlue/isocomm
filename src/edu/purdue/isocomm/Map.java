@@ -49,29 +49,7 @@ public class Map extends Activity {
 		
 	}
 	
-	public class PGNPosData {
-		
-		public byte SID; //SID
-		public int date; //days since january 1, 1970
-		public int time; //second since midnight
-		public long latitude; //latitude
-		public long longitude; //longitude
-		public long altitude; //altitude
-		public byte GNSStypeAndMethod; //GNSS type and GNSS Method
-		public byte integrityAndReserved; //Integreity and Reserved Variables
-		public byte numOfSVs; //number of satellites used
-		public int HDOP; //horizontal dilution of precision
-		public int PDOP; //probable dilution of precision
-		public int GeoidalSep; //Geoidal Seperation
-		public int ref; //Reference Stations number, type, and ID
-		public int age; //age of DGNSS Corrections
-		
-		/* See Document for alex for more on these values above */		
-	}
-	
-	
-	
-	
+
 	//Postman deliver messages from DeviceSelectDialog to Map activity
 	@SuppressLint("HandlerLeak")
 	private final Handler postman = new Handler() {
@@ -80,22 +58,33 @@ public class Map extends Activity {
 			switch (msg.what) {
 				
 				case BEGIN_COMMUNICATE:
-					myMenu.getItem(1).setTitle("Live");
-					myMenu.getItem(1).setIcon(R.drawable.gdot2);
-					myMenu.getItem(1).setEnabled(false);		
+					myMenu.getItem(2).setTitle("Live");
+					myMenu.getItem(2).setIcon(R.drawable.gdot2);
+					myMenu.getItem(2).setEnabled(false);		
 					
 					Log.i("ISOBLUE","postman: I will now do stuff");
 					
-					final ISOBUSSocket imsock = (ISOBUSSocket)msg.obj;
+					@SuppressWarnings("unchecked")
+					ArrayList<ISOBUSSocket> socks = (ArrayList<ISOBUSSocket>)msg.obj;
+					final ISOBUSSocket imsock = socks.get(0);
+//					final ISOBUSSocket ensock = socks.get(1);
 						
 					Thread ATAX = new Thread(){
 							public void run(){
 								org.isoblue.isobus.Message message = null;
+								org.isoblue.isobus.Message message2 = null;
+
 								int msg_count = 0;
 								
 								while(msg_count < 1000){
 									try {
 										message = imsock.read();
+										
+//										if (message.getPgn().toString().equals("129029") || message.getPgn().toString().equals("65488")){
+//											Log.i("postman", message.toString());
+//										}
+										Log.i("IMPLEMENT", message.toString());
+//										Log.i("ENGINE", message2.toString());
 
 										//BBB <--- https://dl.dropboxusercontent.com/u/41564792/data.zip
 										
@@ -106,20 +95,22 @@ public class Map extends Activity {
 										
 										runOnUiThread(new Runnable() {
 								            public void run() {
-								            	markPlace(new LatLng(Math.random() + 40.12262549999998, Math.random() + -89.92454150000002),
-								            			bfr.getData().toString());
+//								            	markPlace(new LatLng(Math.random() + 40.12262549999998, Math.random() + -89.92454150000002),
+//								            			bfr.getData().toString());
 								            }
 								        });
 										
+										
+										
 										//slow it down, demo only
-										Thread.sleep(500);
+//										Thread.sleep(500);
 									} catch (InterruptedException e) {
 										//Interuption not thrown!!
 										Log.i("postman","Unable to read from BT");
 										e.printStackTrace();
 									}
 									
-									Log.i("postman", message.toString());
+									
 								}
 							}
 						};
@@ -235,74 +226,5 @@ public class Map extends Activity {
 	    	return true;
 	    }
 	
-	@Override
-	//You need to pass it all 7 messages from the BBB
-	//The PGN for these values must be 129029, and NOT 129025 as it is not yet supported
-	//As of right now only latitude and longitude are included. 
-	// not sure how we want save teh final latitude and longitude
-	public boolean GNSSData(Message[] msgs, PGNPosData )
-	{
-		long latitude = 0, longitude = 0; //variables to hold the values from the data block
-		
-		//rebuilds the latitude from data block from pgn 129029
-		latitude = msgs[1].data[2];
-		latitude = latitude | ((int)msgs[1].data[3] << 8);
-		latitude = latitude | ((int)msgs[1].data[4] << 16);
-		latitude = latitude | ((int)msgs[1].data[5] << 24);
-		latitude = latitude | ((int)msgs[1].data[6] << 32);
-		latitude = latitude | ((int)msgs[1].data[7] << 40);
-		latitude = latitude | ((int)msgs[2].data[1] << 48);
-		latitude = latitude | ((int)msgs[2].data[2] << 56);
-		
-		//rebuilds the longitude from data block from pgn 129029
-		longitude = msgs[2].data[3];
-		longitude = longitude | ((int)msgs[2].data[4] << 8);
-		longitude = longitude | ((int)msgs[2].data[5] << 16);
-		longitude = longitude | ((int)msgs[2].data[6] << 24);
-		longitude = longitude | ((int)msgs[2].data[7] << 32);
-		longitude = longitude | ((int)msgs[3].data[2] << 40);
-		longitude = longitude | ((int)msgs[3].data[3] << 48);
-		longitude = longitude | ((int)msgs[3].data[4] << 56);
-		
-		//Convert latitude and longitude to double form
-		double final_longitude = longitude * 0.0000000000000001;
-		double final_latitude = latitude * 0.0000000000000001;
-		
-		
-		//Should save the longitude and latitude in a file, along with a time stamp to help with replaying.
-		
-		//Also should pass the values somehow to be used with google maps. 
-		
-		return true;
-	}
-
-	//Given PGN 65488 message block (it is only one message)
-	//Will return the yield data stored in units bushels/sec
-	public double yieldData(Message msg)
-	{
-		int yield = 0;
-		yield = msg.data[0];
-		yield = yield | msg.data[1] << 8;
-
-		return (double) (yield * .0000189545096358038);
-
-		//YIELD PGN 65488
-		//FIRST TWO BYTES IN DATA FIELD ARE YIELD DATA
-		//multiply by 1.89545096358038e-5	bushels / sec
-
-	}
-	
-	//new function to save pgns
-
-	//if PGN == 129029
-	//collect or store all 7 messages of the packet or pass them to the next function
-	//grab latitude and longitude from the data packets from the messages
-	//pass the time stamp as well to the data
-	//store the latitude, longitude, and timestamp to a file of some sort
-	//plot the data from this file using markers or tiles. 
-
-	//store lat, long, and timestamp
-
-	//plot the data
 
 }
