@@ -89,20 +89,28 @@ public class Map extends Activity {
 
 								int msg_count = 0;
 								
-								while(msg_count < 5000000){
+								while(msg_count < 9990000){
 									try {
 										message = imsock.read();
 										
 										
 										if (message.getPgn().toString().equals("PGN:129029")){
-											Log.i("postman", "FOUND GPS: " + message.toString());
+//											Log.i("postman", "FOUND GPS: " + message.toString());
 											//Do stuff in here
 
 											gpsbuffer.add(message);
 										}else if (message.getPgn().toString().equals("PGN:65488")){
 											Log.i("postman", "FOUND YIELD: " + message.toString());
-											double result = dgrab.yieldData(message);
+											final double result = dgrab.yieldData(message);
 											Log.i("postman","Your yield data " + result);
+											
+											runOnUiThread(new Runnable() {
+									            public void run() {
+									            	LatLng previous_coord = gplist.get(gplist.size() - 1);
+									            	markPlace(previous_coord, result + "");
+									            }
+									        });
+											
 										}
 										
 										if(gpsbuffer.size() == 7){
@@ -179,10 +187,11 @@ public class Map extends Activity {
 	
 	//Handles incoming GPS coordinates from BBB sent over bluetooth
 	public void markPlace(LatLng point, String lbl){
+		
 		mMap.addMarker(new MarkerOptions()
         .position(point)
-        .title(lbl)
-        .anchor(0.5f,0.5f));
+        .title("Yield Data")
+        .snippet(lbl));
 	}
 	
 	//TODO: Remove this and make a generic Class to handle Map operations (extend GoogleMap)

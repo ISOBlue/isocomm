@@ -106,17 +106,18 @@ public class DataGrabber {
 	//Will return the yield data stored in units bushels/sec
 	public double yieldData(org.isoblue.isobus.Message msg)
 	{
+		
 		int yield = 0;
+		byte[] yieldData = msg.getData();
+		yield = yieldData[0];
+		yield = yield | yieldData[1] << 8;
 		
-		//byte[] yieldData = msg.getData();
-		//yield = yieldData[0];
-		//yield = yield | yieldData[1] << 8;
-		
-		byte[] yields = new byte[] {msg.getData()[1], msg.getData()[0]};
-	    ByteBuffer yieldBuffer = ByteBuffer.wrap(yields);
+//		byte[] yields = new byte[] {msg.getData()[1], msg.getData()[0]};
+//	    ByteBuffer yieldBuffer = ByteBuffer.wrap(yields);
 //	    yieldBuffer.order(ByteOrder.LITTLE_ENDIAN);
+//	    double y = yieldBuffer.getLong() * .0000189545096358038f;
 	    
-	    return (double) (yieldBuffer.getLong() * .0000189545096358038);
+	    return yield;
 	    
 		//YIELD PGN 65488
 		//FIRST TWO BYTES IN DATA FIELD ARE YIELD DATA
