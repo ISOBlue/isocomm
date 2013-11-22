@@ -82,9 +82,6 @@ public class DataGrabber {
 	    double longg = longBuffer.getLong()*0.0000000000000001f;
 //	    Log.i("test2", longg  + " LONG");	    
 	    
-	    
-	    
-	    
 ////		longitude = dataBlock3[3];
 ////		longitude = longitude | (dataBlock3[4] << 8);
 ////		longitude = longitude | (dataBlock3[5] << 16);
@@ -107,17 +104,16 @@ public class DataGrabber {
 	public double yieldData(org.isoblue.isobus.Message msg)
 	{
 		
-		int yield = 0;
 		byte[] yieldData = msg.getData();
-		yield = yieldData[0];
-		yield = yield | yieldData[1] << 8;
-		
+		byte[] yield = new byte[] {yieldData[1],yieldData[0]};
+	    ByteBuffer yieldBuffer = ByteBuffer.wrap(yield);
+	    
 //		byte[] yields = new byte[] {msg.getData()[1], msg.getData()[0]};
 //	    ByteBuffer yieldBuffer = ByteBuffer.wrap(yields);
 //	    yieldBuffer.order(ByteOrder.LITTLE_ENDIAN);
 //	    double y = yieldBuffer.getLong() * .0000189545096358038f;
 	    
-	    return yield;
+	    return yieldBuffer.getInt() * .0000189545096358038f;
 	    
 		//YIELD PGN 65488
 		//FIRST TWO BYTES IN DATA FIELD ARE YIELD DATA
