@@ -11,10 +11,14 @@ import org.isoblue.isobus.ISOBUSSocket;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapFragment;
+import com.google.android.gms.maps.model.Circle;
+import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.Polygon;
 import com.google.android.gms.maps.model.PolygonOptions;
+import com.google.android.gms.maps.model.Polyline;
+import com.google.android.gms.maps.model.PolylineOptions;
 
 import android.R.menu;
 import android.os.Bundle;
@@ -29,6 +33,8 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Toast;
 
+import edu.purdue.isocomm.DataGrabber;
+
 
 public class Map extends Activity {
 	private GoogleMap mMap;
@@ -36,6 +42,10 @@ public class Map extends Activity {
 	public static final int CONNECTION_SUCCESS = 1;
 	public static final int BEGIN_COMMUNICATE = 2;
 	public Menu myMenu;
+	public Polyline linePath;
+	public ArrayList<LatLng> gplist;
+	
+	public ArrayList<org.isoblue.isobus.Message> gpsbuffer;
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -46,6 +56,7 @@ public class Map extends Activity {
 		places.put("ee",new LatLng(40.428903899999995, -86.91123760000002));
 		
 		initMap();
+		gpsbuffer = new ArrayList<org.isoblue.isobus.Message>();
 		
 	}
 	
@@ -55,6 +66,7 @@ public class Map extends Activity {
 	private final Handler postman = new Handler() {
 		@Override
 		public void handleMessage(Message msg) {
+						
 			switch (msg.what) {
 				
 				case BEGIN_COMMUNICATE:
@@ -68,7 +80,8 @@ public class Map extends Activity {
 					ArrayList<ISOBUSSocket> socks = (ArrayList<ISOBUSSocket>)msg.obj;
 					final ISOBUSSocket imsock = socks.get(0);
 //					final ISOBUSSocket ensock = socks.get(1);
-						
+					final DataGrabber dgrab = new DataGrabber();
+		
 					Thread ATAX = new Thread(){
 							public void run(){
 								org.isoblue.isobus.Message message = null;
@@ -76,14 +89,44 @@ public class Map extends Activity {
 
 								int msg_count = 0;
 								
-								while(msg_count < 1000){
+								while(msg_count < 5000000){
 									try {
 										message = imsock.read();
 										
-//										if (message.getPgn().toString().equals("129029") || message.getPgn().toString().equals("65488")){
-//											Log.i("postman", message.toString());
-//										}
-										Log.i("IMPLEMENT", message.toString());
+										
+										if (message.getPgn().toString().equals("PGN:129029")){
+											Log.i("postman", "FOUND GPS: " + message.toString());
+											//Do stuff in here
+
+											gpsbuffer.add(message);
+										}else if (message.getPgn().toString().equals("PGN:65488")){
+											Log.i("postman", "FOUND YIELD: " + message.toString());
+											double result = dgrab.yieldData(message);
+											Log.i("postman","Your yield data " + result);
+										}
+										
+										if(gpsbuffer.size() == 7){
+											org.isoblue.isobus.Message[] bar = gpsbuffer.toArray(new org.isoblue.isobus.Message[7]);
+											final LatLng coord = dgrab.GNSSData(bar);
+											Log.i("postman","Your GPS data " + coord.latitude + ", " + coord.longitude);
+											gpsbuffer.clear();
+											
+											
+											runOnUiThread(new Runnable() {
+									            public void run() {
+									            	gplist.add(coord);
+									            	if(gplist.size() == 1){
+									            		mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(coord, 17.00f)); 
+									            	}
+													linePath.setPoints(gplist);	
+									            }
+									        });
+											
+										}
+										
+										
+										
+//										Log.i("IMPLEMENT", message.getPgn().toString());
 //										Log.i("ENGINE", message2.toString());
 
 										//BBB <--- https://dl.dropboxusercontent.com/u/41564792/data.zip
@@ -93,12 +136,6 @@ public class Map extends Activity {
 										final int coord_adder = msg_count;
 										final org.isoblue.isobus.Message bfr = message;
 										
-										runOnUiThread(new Runnable() {
-								            public void run() {
-//								            	markPlace(new LatLng(Math.random() + 40.12262549999998, Math.random() + -89.92454150000002),
-//								            			bfr.getData().toString());
-								            }
-								        });
 										
 										
 										
@@ -124,34 +161,47 @@ public class Map extends Activity {
 	
 	
 	private void initMap(){
-		mMap = ((MapFragment) getFragmentManager().findFragmentById(R.id.map)).getMap(); //init map
-		mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(places.get("ee"), 5.00f)); //set default camera zoom and location
-		labelStuff();
 		
+		mMap = ((MapFragment) getFragmentManager().findFragmentById(R.id.map)).getMap(); //init map
+		mMap.setMapType(GoogleMap.MAP_TYPE_HYBRID);
+		
+		 linePath = mMap.addPolyline(new PolylineOptions()
+	     .width(5)
+	     .color(Color.RED));
+		 
+		 
+		 gplist = new ArrayList<LatLng>();
+//		 gplist.add(places.get("birck"));
+//		 gplist.add( places.get("ee"));
+		 
+		 linePath.setPoints(gplist);
 	}
 	
 	//Handles incoming GPS coordinates from BBB sent over bluetooth
 	public void markPlace(LatLng point, String lbl){
 		mMap.addMarker(new MarkerOptions()
         .position(point)
-        .title(lbl));
+        .title(lbl)
+        .anchor(0.5f,0.5f));
 	}
 	
 	//TODO: Remove this and make a generic Class to handle Map operations (extend GoogleMap)
 	public void labelStuff(){
-		markPlace(places.get("birck"),"Hello Yield!");
-		
-		
-		mMap.addPolygon(new PolygonOptions()
-        .add(new LatLng(40.42262549999998, -86.92454150000002), 
-        		new LatLng(41,-88), 
-        		new LatLng(39,-86), 
-        		new LatLng(42,-84))
-        .strokeWidth(1.00f));
+				
+//		 Polyline line = mMap.addPolyline(new PolylineOptions()
+//	     .add(places.get("birck"))
+//	     .width(2)
+//	     .color(Color.RED));
+//
+//		 ArrayList<LatLng> gplist = new ArrayList<LatLng>();
+//		 gplist.add(places.get("ee"));
+//		 gplist.add(places.get("birck"));
+//		 line.setPoints(gplist);
+		 
 	}
 	
 	private void Handle_SimulateStuff(){
-		mMap.setMapType(GoogleMap.MAP_TYPE_SATELLITE);
+		
 		mMap.addPolygon(new PolygonOptions()
         .add(new LatLng(41.5016, -86.19123),  // 41� 5.016', -86� 19.123'
         		new LatLng(41.5055,-86.19123),  //41� 5.055', -86� 16.805'

@@ -53,7 +53,11 @@ public class DataGrabber {
 
 		byte[] latData = new byte[] {dataBlock3[2], dataBlock3[1], dataBlock2[7], dataBlock2[6], dataBlock2[5], dataBlock2[4], dataBlock2[3],dataBlock2[2]};
 	    ByteBuffer latBuffer = ByteBuffer.wrap(latData);
-	    latBuffer.order(ByteOrder.LITTLE_ENDIAN);
+	    
+	   
+		double lat = latBuffer.getLong()*0.0000000000000001f;
+//	    Log.i("test2", lat + " LAT");	    
+//	    
 //		latitude = dataBlock2[2];
 //		latitude = latitude | (dataBlock2[3] << 8);
 //		latitude = latitude | (dataBlock2[4] << 16);
@@ -63,26 +67,38 @@ public class DataGrabber {
 //		latitude = latitude | (dataBlock3[1] << 48);
 //		latitude = latitude | (dataBlock3[2] << 56);
 		
-	    
-		//rebuilds the longitude very much like the latitiude
-		byte[] longData = new byte[] {dataBlock4[4], dataBlock4[3], dataBlock4[2], dataBlock3[7], dataBlock3[6], dataBlock3[5], dataBlock3[4], dataBlock3[3]};
+//	    
+//		//rebuilds the longitude very much like the latitiude
+		byte[] longData = new byte[] {dataBlock4[3], dataBlock4[2], dataBlock4[1], dataBlock3[7], dataBlock3[6], dataBlock3[5], dataBlock3[4], dataBlock3[3]};
 	    ByteBuffer longBuffer = ByteBuffer.wrap(longData);
-	    longBuffer.order(ByteOrder.LITTLE_ENDIAN);
+//	    longBuffer.order(ByteOrder.BIG_ENDIAN);
 	    
-//		longitude = dataBlock3[3];
-//		longitude = longitude | (dataBlock3[4] << 8);
-//		longitude = longitude | (dataBlock3[5] << 16);
-//		longitude = longitude | (dataBlock3[6] << 24);
-//		longitude = longitude | (dataBlock3[7] << 32);
-//		longitude = longitude | (dataBlock4[2] << 40);
-//		longitude = longitude | (dataBlock4[3] << 48);
-//		longitude = longitude | (dataBlock4[4] << 56);
-		
-		//Convert latitude and longitude to double form
-		double final_longitude = longBuffer.getLong() * 0.0000000000000001;
-		double final_latitude = latBuffer.getLong() * 0.0000000000000001;
-		
-		LatLng point = new LatLng(final_latitude, final_longitude);
+//	    int f = 0;
+//	    for(f = 0; f < longData.length; f++){
+//	    	Log.i("test",String.format("0x%20x", longData[f]));
+//	    }
+	    
+	    
+	    double longg = longBuffer.getLong()*0.0000000000000001f;
+//	    Log.i("test2", longg  + " LONG");	    
+	    
+	    
+	    
+	    
+////		longitude = dataBlock3[3];
+////		longitude = longitude | (dataBlock3[4] << 8);
+////		longitude = longitude | (dataBlock3[5] << 16);
+////		longitude = longitude | (dataBlock3[6] << 24);
+////		longitude = longitude | (dataBlock3[7] << 32);
+////		longitude = longitude | (dataBlock4[2] << 40);
+////		longitude = longitude | (dataBlock4[3] << 48);
+////		longitude = longitude | (dataBlock4[4] << 56);
+//		
+//		//Convert latitude and longitude to double form
+//		double final_longitude = longBuffer.getLong() * 0.0000000000000001f;
+//		double final_latitude = latBuffer.getLong() * 0.0000000000000001;
+//		
+		LatLng point = new LatLng(lat, longg);
 		return point;
 	}
 
@@ -96,9 +112,9 @@ public class DataGrabber {
 		//yield = yieldData[0];
 		//yield = yield | yieldData[1] << 8;
 		
-		byte[] yields = new byte[] {msg[1], msg[0]};
+		byte[] yields = new byte[] {msg.getData()[1], msg.getData()[0]};
 	    ByteBuffer yieldBuffer = ByteBuffer.wrap(yields);
-	    yieldBuffer.order(ByteOrder.LITTLE_ENDIAN);
+//	    yieldBuffer.order(ByteOrder.LITTLE_ENDIAN);
 	    
 	    return (double) (yieldBuffer.getLong() * .0000189545096358038);
 	    
