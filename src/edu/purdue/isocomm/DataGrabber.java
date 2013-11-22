@@ -105,7 +105,7 @@ public class DataGrabber {
 	{
 		
 		byte[] yieldData = msg.getData();
-		byte[] yield = new byte[] {yieldData[1],yieldData[0]};
+		byte[] yield = new byte[] {yieldData[3],yieldData[2],yieldData[1],yieldData[0]};
 	    ByteBuffer yieldBuffer = ByteBuffer.wrap(yield);
 	    
 //		byte[] yields = new byte[] {msg.getData()[1], msg.getData()[0]};
@@ -113,7 +113,8 @@ public class DataGrabber {
 //	    yieldBuffer.order(ByteOrder.LITTLE_ENDIAN);
 //	    double y = yieldBuffer.getLong() * .0000189545096358038f;
 	    
-	    return yieldBuffer.getInt() * .0000189545096358038f;
+	    double y = yieldBuffer.getInt() * .0000189545096358038f;
+	    return y;
 	    
 		//YIELD PGN 65488
 		//FIRST TWO BYTES IN DATA FIELD ARE YIELD DATA
