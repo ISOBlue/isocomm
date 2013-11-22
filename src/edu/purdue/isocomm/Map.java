@@ -46,6 +46,12 @@ public class Map extends Activity {
 	public Polyline linePath;
 	public ArrayList<LatLng> gplist;
 	public ArrayList<Marker> yieldMarkerList;
+	private SQLController dbcon;
+	
+	
+	public static float YIELD_HIGH = 0.26f;
+	public static float YIELD_MEDIUM = 0.24f;
+	public static float YIELD_LOW = 0.20f;
 	
 	public ArrayList<org.isoblue.isobus.Message> gpsbuffer;
 	
@@ -60,6 +66,7 @@ public class Map extends Activity {
 		places.put("ee",new LatLng(40.428903899999995, -86.91123760000002));
 		
 		initMap();
+		dbcon = new SQLController(Map.this);
 		
 		//buffer the GPS coordinates for manipulation
 		gpsbuffer = new ArrayList<org.isoblue.isobus.Message>();
@@ -91,11 +98,10 @@ public class Map extends Activity {
 							public void run(){
 								org.isoblue.isobus.Message message = null;
 
-								int msg_count = 0;
-								
-								while(msg_count < 99999999){
+								while(true){ 
 									try {
 										message = imsock.read();
+										dbcon.saveMessage(message);
 										
 										if (message.getPgn().toString().equals("PGN:129029")){
 											gpsbuffer.add(message);
@@ -114,10 +120,23 @@ public class Map extends Activity {
 									            	LatLng previous_coord = gplist.get(gplist.size() - 1);
 									            	markPlace(previous_coord, result + "");
 									            	
+									            	//Color.rgb((int)(255*Math.pow(result*10,2)), 255 - (int)Math.pow(result*50,2), 0)
+									            	
+									            	int TRESHC = Color.MAGENTA;						            	
+									            	if(result >= YIELD_HIGH){
+									            		TRESHC = Color.GREEN;
+									            	}else if(result >= YIELD_MEDIUM){
+									            		TRESHC = Color.YELLOW;
+									            	}else if(result >= YIELD_LOW){
+									            		TRESHC = Color.RED;
+									            	}else{
+									            		TRESHC = Color.MAGENTA;
+									            	}
+									            	
 									            	//create new path, don't care about old one 
 									            	linePath = mMap.addPolyline(new PolylineOptions()
 										       	     .width(5)
-										       	     .color(Color.rgb((int)(255*Math.pow(result*10,2)), 255 - (int)Math.pow(result*50,2), 0)));
+										       	     .color(TRESHC));
 										       		 							            	
 									            	//Clear gplist but retain latest coordinate for curve smoothness
 									            	LatLng LatestCoord = gplist.get(gplist.size() - 1);
@@ -136,7 +155,7 @@ public class Map extends Activity {
 											org.isoblue.isobus.Message[] bar = gpsbuffer.toArray(new org.isoblue.isobus.Message[7]);
 											final LatLng coord = dgrab.GNSSData(bar);
 											Log.i("postman","GPS data " + coord.latitude + ", " + coord.longitude);
-											gpsbuffer.clear();
+											gpsbuffer.clear();										
 											
 											//Once GPS coordinate is ready, update it on map  
 											runOnUiThread(new Runnable() {
@@ -150,9 +169,7 @@ public class Map extends Activity {
 									        });
 											
 										}
-																				
-										msg_count++;
-										
+																														
 									} catch (InterruptedException e) {
 										//Interuption not thrown!!
 										Log.i("postman","Unable to read from BT");
