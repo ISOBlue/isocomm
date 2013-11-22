@@ -14,6 +14,7 @@ import com.google.android.gms.maps.MapFragment;
 import com.google.android.gms.maps.model.Circle;
 import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.Polygon;
 import com.google.android.gms.maps.model.PolygonOptions;
@@ -44,6 +45,7 @@ public class Map extends Activity {
 	public Menu myMenu;
 	public Polyline linePath;
 	public ArrayList<LatLng> gplist;
+	public ArrayList<Marker> yieldMarkerList;
 	
 	public ArrayList<org.isoblue.isobus.Message> gpsbuffer;
 	
@@ -52,10 +54,14 @@ public class Map extends Activity {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_map);
 		places = new HashMap<String, LatLng>();
+		
+		//bunch of places we can use as reference
 		places.put("birck",new LatLng(40.42262549999998, -86.92454150000002));
 		places.put("ee",new LatLng(40.428903899999995, -86.91123760000002));
 		
 		initMap();
+		
+		//buffer the GPS coordinates for manipulation
 		gpsbuffer = new ArrayList<org.isoblue.isobus.Message>();
 		
 	}
@@ -79,47 +85,60 @@ public class Map extends Activity {
 					@SuppressWarnings("unchecked")
 					ArrayList<ISOBUSSocket> socks = (ArrayList<ISOBUSSocket>)msg.obj;
 					final ISOBUSSocket imsock = socks.get(0);
-//					final ISOBUSSocket ensock = socks.get(1);
 					final DataGrabber dgrab = new DataGrabber();
 		
 					Thread ATAX = new Thread(){
 							public void run(){
 								org.isoblue.isobus.Message message = null;
-								org.isoblue.isobus.Message message2 = null;
 
 								int msg_count = 0;
 								
-								while(msg_count < 9990000){
+								while(msg_count < 99999999){
 									try {
 										message = imsock.read();
 										
-										
 										if (message.getPgn().toString().equals("PGN:129029")){
-//											Log.i("postman", "FOUND GPS: " + message.toString());
-											//Do stuff in here
-
 											gpsbuffer.add(message);
 										}else if (message.getPgn().toString().equals("PGN:65488")){
-											Log.i("postman", "FOUND YIELD: " + message.toString());
 											final double result = dgrab.yieldData(message);
-											Log.i("postman","Your yield data " + result);
+											Log.i("postman","Yield data " + result);
 											
 											runOnUiThread(new Runnable() {
 									            public void run() {
+									            	
+									            	if(gplist.size() == 0){
+									            		return;
+									            	}
+									            	
+									            	//plot yield data at latest coordinate
 									            	LatLng previous_coord = gplist.get(gplist.size() - 1);
 									            	markPlace(previous_coord, result + "");
+									            	
+									            	//create new path, don't care about old one 
+									            	linePath = mMap.addPolyline(new PolylineOptions()
+										       	     .width(5)
+										       	     .color(Color.rgb((int)(255*Math.pow(result*10,2)), 255 - (int)Math.pow(result*50,2), 0)));
+										       		 							            	
+									            	//Clear gplist but retain latest coordinate for curve smoothness
+									            	LatLng LatestCoord = gplist.get(gplist.size() - 1);
+										       		gplist.clear();
+										       		gplist.add(LatestCoord);
+										       		
+									            	
 									            }
 									        });
 											
 										}
 										
+										//If FastPackets are ready to be process
+										//send them to DataGrabber
 										if(gpsbuffer.size() == 7){
 											org.isoblue.isobus.Message[] bar = gpsbuffer.toArray(new org.isoblue.isobus.Message[7]);
 											final LatLng coord = dgrab.GNSSData(bar);
-											Log.i("postman","Your GPS data " + coord.latitude + ", " + coord.longitude);
+											Log.i("postman","GPS data " + coord.latitude + ", " + coord.longitude);
 											gpsbuffer.clear();
 											
-											
+											//Once GPS coordinate is ready, update it on map  
 											runOnUiThread(new Runnable() {
 									            public void run() {
 									            	gplist.add(coord);
@@ -131,24 +150,9 @@ public class Map extends Activity {
 									        });
 											
 										}
-										
-										
-										
-//										Log.i("IMPLEMENT", message.getPgn().toString());
-//										Log.i("ENGINE", message2.toString());
-
-										//BBB <--- https://dl.dropboxusercontent.com/u/41564792/data.zip
-										
+																				
 										msg_count++;
 										
-										final int coord_adder = msg_count;
-										final org.isoblue.isobus.Message bfr = message;
-										
-										
-										
-										
-										//slow it down, demo only
-//										Thread.sleep(500);
 									} catch (InterruptedException e) {
 										//Interuption not thrown!!
 										Log.i("postman","Unable to read from BT");
@@ -179,8 +183,10 @@ public class Map extends Activity {
 		 
 		 
 		 gplist = new ArrayList<LatLng>();
+		 yieldMarkerList = new ArrayList<Marker>();
+		 
 //		 gplist.add(places.get("birck"));
-//		 gplist.add( places.get("ee"));
+//		 gplist.add(places.get("ee"));
 		 
 		 linePath.setPoints(gplist);
 	}
@@ -188,10 +194,22 @@ public class Map extends Activity {
 	//Handles incoming GPS coordinates from BBB sent over bluetooth
 	public void markPlace(LatLng point, String lbl){
 		
-		mMap.addMarker(new MarkerOptions()
+		
+		
+		Marker newmk = mMap.addMarker(new MarkerOptions()
         .position(point)
         .title("Yield Data")
         .snippet(lbl));
+
+		
+		if(yieldMarkerList.size() > 0){
+			if(!yieldMarkerList.get(0).isVisible()){
+				newmk.setVisible(false);
+			}
+		}
+		
+		yieldMarkerList.add(newmk);
+		
 	}
 	
 	//TODO: Remove this and make a generic Class to handle Map operations (extend GoogleMap)
@@ -211,15 +229,18 @@ public class Map extends Activity {
 	
 	private void Handle_SimulateStuff(){
 		
-		mMap.addPolygon(new PolygonOptions()
-        .add(new LatLng(41.5016, -86.19123),  // 41� 5.016', -86� 19.123'
-        		new LatLng(41.5055,-86.19123),  //41� 5.055', -86� 16.805'
-        		new LatLng(41.3296,-86.846), //41� 3.285', -86� 16.846'
-        		new LatLng(41.3296,-86.18747)) //41� 3.296', -86� 18.747'
-
-        .strokeWidth(3.00f)
-        .strokeColor(Color.RED));
-		mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(41.5016, -86.19123), mMap.getMaxZoomLevel() - 10.00f)); //set default camera zoom and location
+		if(yieldMarkerList.size() == 0){
+			return;
+		}
+		boolean setVis = true;
+		if(yieldMarkerList.get(0).isVisible()){
+			setVis = false;
+		}
+		
+		for(int j = 0; j< yieldMarkerList.size(); j++){
+			Marker ptr = (Marker)yieldMarkerList.get(j);
+			ptr.setVisible(setVis);
+		}
 		
 	}
 	
