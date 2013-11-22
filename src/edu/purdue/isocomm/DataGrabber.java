@@ -91,12 +91,17 @@ public class DataGrabber {
 	public double yieldData(org.isoblue.isobus.Message msg)
 	{
 		int yield = 0;
-		byte[] yieldData = msg.getData();
-		yield = yieldData[0];
-		yield = yield | yieldData[1] << 8;
-
-		return (double) (yield * .0000189545096358038);
-
+		
+		//byte[] yieldData = msg.getData();
+		//yield = yieldData[0];
+		//yield = yield | yieldData[1] << 8;
+		
+		byte[] yields = new byte[] {msg[1], msg[0]};
+	    ByteBuffer yieldBuffer = ByteBuffer.wrap(yields);
+	    yieldBuffer.order(ByteOrder.LITTLE_ENDIAN);
+	    
+	    return (double) (yieldBuffer.getLong() * .0000189545096358038);
+	    
 		//YIELD PGN 65488
 		//FIRST TWO BYTES IN DATA FIELD ARE YIELD DATA
 		//multiply by 1.89545096358038e-5	bushels / sec
