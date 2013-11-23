@@ -1,11 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
       xmlns:yourapp="http://schemas.android.com/apk/res-auto" >
-      
+     
+   
+     <item android:id="@+id/history"
+          android:showAsAction="always"
+          android:icon="@drawable/clock"
+         />
+     
     <item android:id="@+id/action_sim"
-          android:title="Simulate"
           android:showAsAction="always|withText" 
-          android:icon="@drawable/map"/>
+          android:icon="@drawable/marker"/>
     
     <item android:id="@+id/action_search"
           android:title="@string/connect"

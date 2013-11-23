@@ -26,12 +26,16 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.annotation.SuppressLint;
+import android.app.ActionBar;
 import android.app.Activity;
+import android.app.ProgressDialog;
 import android.bluetooth.BluetoothDevice;
 import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.Window;
 import android.widget.Toast;
 
 import edu.purdue.isocomm.DataGrabber;
@@ -42,23 +46,32 @@ public class Map extends Activity {
 	public HashMap<String, LatLng> places;
 	public static final int CONNECTION_SUCCESS = 1;
 	public static final int BEGIN_COMMUNICATE = 2;
+	public static final int SHOW_PROGRESSBOX = 3;
+	public static final int SHOW_TOAST = 4;
 	public Menu myMenu;
-	public Polyline linePath;
-	public ArrayList<LatLng> gplist;
+	public Polyline linePath; 
+	public ArrayList<LatLng> gplist;  //gplist contains all the GPS used to draw path
 	public ArrayList<Marker> yieldMarkerList;
 	private SQLController dbcon;
-	
-	
+	private ProgressDialog activeDialog;
+
 	public static float YIELD_HIGH = 0.26f;
 	public static float YIELD_MEDIUM = 0.24f;
 	public static float YIELD_LOW = 0.20f;
 	
-	public ArrayList<org.isoblue.isobus.Message> gpsbuffer;
+	public ArrayList<org.isoblue.isobus.Message> gpsbuffer; //gpsbuffer contains all the GPS messages to be decoded
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+		
+		getWindow().requestFeature(Window.FEATURE_ACTION_BAR_OVERLAY);
+		ActionBar actionBar = getActionBar();
+		actionBar.setBackgroundDrawable(new ColorDrawable(Color.parseColor("#99000000")));
+
 		setContentView(R.layout.activity_map);
+		
+
 		places = new HashMap<String, LatLng>();
 		
 		//bunch of places we can use as reference
@@ -67,9 +80,9 @@ public class Map extends Activity {
 		
 		initMap();
 		dbcon = new SQLController(Map.this);
-		
 		//buffer the GPS coordinates for manipulation
 		gpsbuffer = new ArrayList<org.isoblue.isobus.Message>();
+
 		
 	}
 	
@@ -81,13 +94,36 @@ public class Map extends Activity {
 		public void handleMessage(Message msg) {
 						
 			switch (msg.what) {
-				
+				case SHOW_TOAST:
+					
+					if(activeDialog != null)
+					{
+						activeDialog.cancel();
+						activeDialog = null;
+					}
+					
+					Toast toast = Toast.makeText(Map.this, msg.obj.toString(),Toast.LENGTH_SHORT);
+			 	    toast.show();
+					break;
+					
+				case SHOW_PROGRESSBOX:
+	
+					
+					final ProgressDialog syncingbox = ProgressDialog.show(Map.this, "",msg.obj.toString(), true, true);
+					activeDialog = syncingbox;
+					
+					runOnUiThread(new Runnable() {
+			            public void run() {
+			        		syncingbox.show();
+			            }
+					});
+					
+					break;
+					
 				case BEGIN_COMMUNICATE:
 					myMenu.getItem(2).setTitle("Live");
 					myMenu.getItem(2).setIcon(R.drawable.gdot2);
 					myMenu.getItem(2).setEnabled(false);		
-					
-					Log.i("ISOBLUE","postman: I will now do stuff");
 					
 					@SuppressWarnings("unchecked")
 					ArrayList<ISOBUSSocket> socks = (ArrayList<ISOBUSSocket>)msg.obj;
@@ -104,7 +140,21 @@ public class Map extends Activity {
 										dbcon.saveMessage(message);
 										
 										if (message.getPgn().toString().equals("PGN:129029")){
-											gpsbuffer.add(message);
+											//@@ TODO: Check that the gpsbuffer starts from 0~6
+											// it can cause parsing error if we just catch 7 messages arbitarily
+											
+											if(gpsbuffer.size() == 0){
+												byte[] mdata = message.getData();
+//												if(mdata[0] == 00){
+//													gpsbuffer.add(message);
+													//remove below
+//												}
+												gpsbuffer.add(message);
+											}else if(gpsbuffer.size() > 0){
+												gpsbuffer.add(message);
+											}
+											
+											
 										}else if (message.getPgn().toString().equals("PGN:65488")){
 											final double result = dgrab.yieldData(message);
 											Log.i("postman","Yield data " + result);
@@ -113,6 +163,8 @@ public class Map extends Activity {
 									            public void run() {
 									            	
 									            	if(gplist.size() == 0){
+									            		//if there no decoded GPS coordinate ready
+									            		//do nothing
 									            		return;
 									            	}
 									            	
@@ -121,13 +173,12 @@ public class Map extends Activity {
 									            	markPlace(previous_coord, result + "");
 									            	
 									            	//Color.rgb((int)(255*Math.pow(result*10,2)), 255 - (int)Math.pow(result*50,2), 0)
-									            	
 									            	int TRESHC = Color.MAGENTA;						            	
-									            	if(result >= YIELD_HIGH){
+									            	if(result >= Map.YIELD_HIGH){
 									            		TRESHC = Color.GREEN;
-									            	}else if(result >= YIELD_MEDIUM){
+									            	}else if(result >= Map.YIELD_MEDIUM){
 									            		TRESHC = Color.YELLOW;
-									            	}else if(result >= YIELD_LOW){
+									            	}else if(result >= Map.YIELD_LOW){
 									            		TRESHC = Color.RED;
 									            	}else{
 									            		TRESHC = Color.MAGENTA;
@@ -151,6 +202,8 @@ public class Map extends Activity {
 										
 										//If FastPackets are ready to be process
 										//send them to DataGrabber
+									
+										
 										if(gpsbuffer.size() == 7){
 											org.isoblue.isobus.Message[] bar = gpsbuffer.toArray(new org.isoblue.isobus.Message[7]);
 											final LatLng coord = dgrab.GNSSData(bar);
@@ -202,17 +255,12 @@ public class Map extends Activity {
 		 gplist = new ArrayList<LatLng>();
 		 yieldMarkerList = new ArrayList<Marker>();
 		 
-//		 gplist.add(places.get("birck"));
-//		 gplist.add(places.get("ee"));
-		 
 		 linePath.setPoints(gplist);
 	}
 	
 	//Handles incoming GPS coordinates from BBB sent over bluetooth
 	public void markPlace(LatLng point, String lbl){
-		
-		
-		
+
 		Marker newmk = mMap.addMarker(new MarkerOptions()
         .position(point)
         .title("Yield Data")
@@ -229,26 +277,13 @@ public class Map extends Activity {
 		
 	}
 	
-	//TODO: Remove this and make a generic Class to handle Map operations (extend GoogleMap)
-	public void labelStuff(){
-				
-//		 Polyline line = mMap.addPolyline(new PolylineOptions()
-//	     .add(places.get("birck"))
-//	     .width(2)
-//	     .color(Color.RED));
-//
-//		 ArrayList<LatLng> gplist = new ArrayList<LatLng>();
-//		 gplist.add(places.get("ee"));
-//		 gplist.add(places.get("birck"));
-//		 line.setPoints(gplist);
-		 
-	}
 	
 	private void Handle_SimulateStuff(){
 		
 		if(yieldMarkerList.size() == 0){
 			return;
 		}
+		
 		boolean setVis = true;
 		if(yieldMarkerList.get(0).isVisible()){
 			setVis = false;
@@ -269,7 +304,7 @@ public class Map extends Activity {
 		ArrayList<BluetoothDevice> foundDevices = new ArrayList<BluetoothDevice>();
 		
 		//Our bluetooth connector goodies stuff and etc
-		BTAgent connector = new BTAgent(Map.this, null);
+		BTAgent connector = new BTAgent(Map.this, postman);
 		
 		//Populate with PairedDevices
 		connector.populateWithPairedDevices(foundDevices);
@@ -292,7 +327,6 @@ public class Map extends Activity {
 			//Android requires that all UI activities do not hang up the app's main thread
 			//so it must be processed on the separate UI thread
 			//TODO: this could get a bit messy overtime, there may be more elegant way to accomplish this.
-			
 			runOnUiThread(new Runnable() {
 	            public void run() {
 	            	devListbox.show(getFragmentManager(), "btdev"); 
@@ -311,13 +345,15 @@ public class Map extends Activity {
 	
 	@Override
 	 public boolean onOptionsItemSelected(MenuItem item) {
-		Log.i("ISOCOMM","selected actionbar item");
 	    	switch(item.getItemId()){
 	    		case R.id.action_search:
 	    			Handle_SearchDevice();
+	    			
 	    		break;
 	    		case R.id.action_sim:
 	    			Handle_SimulateStuff();
+	    			postman.obtainMessage(Map.SHOW_TOAST,
+							-1, -1, "Toggle Numeric Yield").sendToTarget();
 	    		break;
 	    	}
 	    	return true;

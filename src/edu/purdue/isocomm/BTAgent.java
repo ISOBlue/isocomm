@@ -41,7 +41,8 @@ public class BTAgent {
 			if (!mBluetoothAdapter.isEnabled()) {
 		        //bluetooth is off
 		 	    ConnectorStatus = STATUS_BT_OFF;
-		    }else{ //bluetooth is on
+		    }else{ 
+		    	//bluetooth is on
 		    	Log.i("ISOCOMM","Bluetooth is ON. We are good to go.");
 		    	ConnectorStatus = STATUS_BT_ON;
 		    }		
@@ -67,7 +68,7 @@ public class BTAgent {
 		
 		Log.i("ISOCOMM","Listing paired devices..");
 		Set<BluetoothDevice> pairedDevices = mBluetoothAdapter.getBondedDevices();
-//		// If there are paired devices
+		//If there are paired devices
 		if (pairedDevices.size() > 0) {
 			Log.i("ISOCOMM","Turns out there are!");
 		    // Loop through paired devices
@@ -79,27 +80,40 @@ public class BTAgent {
 		}
 	}
 	
-	public ISOBlueDevice getIBDevice(BluetoothDevice mdev){
-		ISOBlueDevice ibd = null;
-//        final ProgressDialog msg_discovering = ProgressDialog.show(mContext, "","Connecting", true, true);
-//        msg_discovering.show();
-        
-		try {
-		    // Creating the ISOBlueDevice initiates the connection with the ISOBlue
-		    ibd = new ISOBlueDevice(mdev);
-		    ibdevice = ibd;
-			Toast toast = Toast.makeText(mContext, "Connected to " + ibd.getDevice().getName(),Toast.LENGTH_SHORT);
-	 	    toast.show();
-	 	    
-		} catch(IOException e) {
-		    // The BluetoothDevice could not be connected to, or it is not an ISOBlue
-			Toast toast = Toast.makeText(mContext, "Device offline or is not an ISOBLUE device",Toast.LENGTH_SHORT);
-     	    toast.show();
-     	    ibd = null;
-		}
+	public ISOBlueDevice getIBDevice(final BluetoothDevice mdev){
+//		ISOBlueDevice ibd = null;
 		
-		return ibd;
+		mHandler.obtainMessage(Map.SHOW_PROGRESSBOX,
+				-1, -1, "Connecting please wait..").sendToTarget();
+		
+		Thread KONNECT = new Thread() {
+		    public void run() {
+		    	try {
+				    //Creating the ISOBlueDevice initiates the connection with the ISOBlue
+		    		ibdevice = new ISOBlueDevice(mdev);
+		    		
+		    		mHandler.obtainMessage(Map.SHOW_PROGRESSBOX,
+		    				-1, -1, "Handshaking with " + ibdevice.getDevice().getName()).sendToTarget();
+			 	    
+				} catch(IOException e) {
+					Log.i("ISOBLUE","UNABLE CONNECT - SERVICE NOT FOUND");
+					mHandler.obtainMessage(Map.SHOW_TOAST,
+							-1, -1, "Cannot connect to selected ISOBLUE device").sendToTarget();
+					
+		     	    ibdevice = null;
+				}
+				
+		    }  
+		};
+
+		KONNECT.start();
+
+		
+		return ibdevice;
 	}
 	
+	public void beginHandshake(){
+		
 	
+	}
 }
