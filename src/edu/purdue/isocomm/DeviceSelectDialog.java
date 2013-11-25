@@ -61,40 +61,7 @@ public class DeviceSelectDialog extends DialogFragment {
 	    builder.setItems(items, new DialogInterface.OnClickListener() {
 	    	
 	        public void onClick(DialogInterface dialog, int which) {
-	        	ISOBlueDevice ibd = BTconnector.getIBDevice(btdevices.get(which));
-	        	Set<PGN> pgns = new HashSet<PGN>();
-	        	
-	        	//BTAgent already handles bluetooth failure
-         	   if(ibd == null){
-         		   return;
-         	   }
-         	   
-         	   //Filtering
-	        	try {
-	        	    pgns.add(new PGN(129029));
-	        	    pgns.add(new PGN(65488));
-	        	} catch(InvalidPGNException e) {
-	        		Log.i("ISOBLUE","Error while adding PGN to filter");
-	        	}
-
-	        	try {
-					ISOBUSSocket impSocket = new ISOBUSSocket(ibd.getImplementBus(), null, pgns);
-					ISOBUSSocket engSocket = new ISOBUSSocket(ibd.getEngineBus(), null, pgns);
-					
-					ArrayList<ISOBUSSocket> sockets = new  ArrayList<ISOBUSSocket>();
-					sockets.add(impSocket);
-					sockets.add(engSocket);
-					
-					//Dispatch messages to Map 
-					postman.obtainMessage(Map.BEGIN_COMMUNICATE,
-							-1, -1, sockets).sendToTarget();
-				
-					
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-	        	
+	        	BTconnector.getIBDevice(btdevices.get(which));
 	        }
 	    });
 	    return builder.create();

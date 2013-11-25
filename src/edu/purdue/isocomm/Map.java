@@ -96,19 +96,20 @@ public class Map extends Activity {
 			switch (msg.what) {
 				case SHOW_TOAST:
 					
-					if(activeDialog != null)
-					{
-						activeDialog.cancel();
-						activeDialog = null;
-					}
 					
 					Toast toast = Toast.makeText(Map.this, msg.obj.toString(),Toast.LENGTH_SHORT);
 			 	    toast.show();
+			 	    
+			 	    if(activeDialog != null)
+					{
+						activeDialog.dismiss();
+						activeDialog = null;
+					}
+			 	   
 					break;
 					
 				case SHOW_PROGRESSBOX:
-	
-					
+			
 					final ProgressDialog syncingbox = ProgressDialog.show(Map.this, "",msg.obj.toString(), true, true);
 					activeDialog = syncingbox;
 					

@@ -2,11 +2,13 @@ package edu.purdue.isocomm;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Set;
 
 import org.isoblue.isoblue.ISOBlueDevice;
 import org.isoblue.isobus.ISOBUSSocket;
 import org.isoblue.isobus.PGN;
+import org.isoblue.isobus.PGN.InvalidPGNException;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -80,36 +82,66 @@ public class BTAgent {
 		}
 	}
 	
-	public ISOBlueDevice getIBDevice(final BluetoothDevice mdev){
+	public boolean getIBDevice(final BluetoothDevice mdev){
 //		ISOBlueDevice ibd = null;
+//		
 		
-		mHandler.obtainMessage(Map.SHOW_PROGRESSBOX,
-				-1, -1, "Connecting please wait..").sendToTarget();
 		
 		Thread KONNECT = new Thread() {
 		    public void run() {
 		    	try {
+		    		mHandler.obtainMessage(Map.SHOW_PROGRESSBOX,
+		    				-1, -1, "Connecting please wait..").sendToTarget();
+
 				    //Creating the ISOBlueDevice initiates the connection with the ISOBlue
 		    		ibdevice = new ISOBlueDevice(mdev);
-		    		
-		    		mHandler.obtainMessage(Map.SHOW_PROGRESSBOX,
-		    				-1, -1, "Handshaking with " + ibdevice.getDevice().getName()).sendToTarget();
-			 	    
+		        	Set<PGN> pgns = new HashSet<PGN>();
+		        	
+		        	try {
+		        	    pgns.add(new PGN(129029));
+		        	    pgns.add(new PGN(65488));
+		        	} catch(InvalidPGNException e) {
+		        		Log.i("ISOBLUE","Error while adding PGN to filter");
+		        	}
+		        	
+		        	try {
+						ISOBUSSocket impSocket = new ISOBUSSocket(ibdevice.getImplementBus(), null, pgns);
+						ISOBUSSocket engSocket = new ISOBUSSocket(ibdevice.getEngineBus(), null, pgns);
+						
+						ArrayList<ISOBUSSocket> sockets = new  ArrayList<ISOBUSSocket>();
+						sockets.add(impSocket);
+						sockets.add(engSocket);
+						
+						//Dispatch messages to Map 
+						mHandler.obtainMessage(Map.BEGIN_COMMUNICATE,
+								-1, -1, sockets).sendToTarget();
+					
+						
+						mHandler.obtainMessage(Map.SHOW_TOAST,
+	         					-1, -1, "Connection Estabilished").sendToTarget();
+						
+					} catch (IOException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+    
 				} catch(IOException e) {
 					Log.i("ISOBLUE","UNABLE CONNECT - SERVICE NOT FOUND");
 					mHandler.obtainMessage(Map.SHOW_TOAST,
-							-1, -1, "Cannot connect to selected ISOBLUE device").sendToTarget();
+         					-1, -1, "Cannot connect to selected ISOBLUE device").sendToTarget();
 					
 		     	    ibdevice = null;
 				}
-				
+		    	
 		    }  
 		};
+  	   	
+		
 
 		KONNECT.start();
-
 		
-		return ibdevice;
+		
+		return true;
 	}
 	
 	public void beginHandshake(){
