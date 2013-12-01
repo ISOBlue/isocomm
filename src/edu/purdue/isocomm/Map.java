@@ -142,7 +142,7 @@ public class Map extends Activity {
 										
 										if (message.getPgn().toString().equals("PGN:129029")){
 											//@@ TODO: Check that the gpsbuffer starts from 0~6
-											// it can cause parsing error if we just catch 7 messages arbitarily
+											// it can cause parsing error if we just catch 7 messages arbitarily!!!
 											
 											if(gpsbuffer.size() == 0){
 												byte[] mdata = message.getData();
@@ -171,7 +171,7 @@ public class Map extends Activity {
 									            	
 									            	//plot yield data at latest coordinate
 									            	LatLng previous_coord = gplist.get(gplist.size() - 1);
-									            	markPlace(previous_coord, result + "");
+//									            	markPlace(previous_coord, result + "");
 									            	
 									            	//Color.rgb((int)(255*Math.pow(result*10,2)), 255 - (int)Math.pow(result*50,2), 0)
 									            	int TRESHC = Color.MAGENTA;						            	
@@ -211,10 +211,27 @@ public class Map extends Activity {
 											Log.i("postman","GPS data " + coord.latitude + ", " + coord.longitude);
 											gpsbuffer.clear();										
 											
+											//compare coord with previous coord 
+											//filter out if they are closer than 1 meter
+
+											if(gplist.size() > 1){
+												LatLng pcoord = gplist.get(gplist.size() - 1);
+												//TODO: Turning point detection 
+												// http://stackoverflow.com/questions/17422314/polylines-appearing-on-map-where-they-shouldnt
+
+												if((Math.abs(coord.latitude - pcoord.latitude) > 0.0000000000001) && (Math.abs(coord.longitude - pcoord.longitude) > 0.0000000000001)){
+													gplist.add(coord);
+												}else{
+													Log.i("isoblue","Coordinates too close");
+												}
+											}else{
+												gplist.add(coord);
+											}
+											
 											//Once GPS coordinate is ready, update it on map  
 											runOnUiThread(new Runnable() {
 									            public void run() {
-									            	gplist.add(coord);
+									            	
 									            	if(gplist.size() == 1){
 									            		mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(coord, 17.00f)); 
 									            	}
@@ -246,7 +263,7 @@ public class Map extends Activity {
 	private void initMap(){
 		
 		mMap = ((MapFragment) getFragmentManager().findFragmentById(R.id.map)).getMap(); //init map
-		mMap.setMapType(GoogleMap.MAP_TYPE_HYBRID);
+		mMap.setMapType(GoogleMap.MAP_TYPE_SATELLITE);
 		
 		 linePath = mMap.addPolyline(new PolylineOptions()
 	     .width(5)
