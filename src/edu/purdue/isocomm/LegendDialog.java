@@ -38,7 +38,7 @@ public class LegendDialog extends DialogFragment {
 	    builder.setItems(items, new DialogInterface.OnClickListener() {
 	    	
 	        public void onClick(DialogInterface dialog, int which) {
-	        	 Log.i("Legend Dialog","Hello World");
+	        	 Log.i("Legend Dialog","Not Ready");
 	        }
 	    });
 	    
