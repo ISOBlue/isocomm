@@ -13,14 +13,10 @@ import org.isoblue.isobus.PGN.InvalidPGNException;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.content.Context;
-import android.content.Intent;
 import android.os.Handler;
 import android.util.Log;
-import android.widget.ArrayAdapter;
 import android.widget.Toast;
-import android.app.Activity;
-import android.app.ListActivity;
-import android.app.ProgressDialog;
+
 
 public class BTAgent {
 	private final BluetoothAdapter mBluetoothAdapter;
@@ -104,14 +100,25 @@ public class BTAgent {
 		        		Log.i("ISOBLUE","Error while adding PGN to filter");
 		        	}
 		        	
-		        	try {
-						ISOBUSSocket impSocket = new ISOBUSSocket(ibdevice.getImplementBus(), null, pgns);
-						ISOBUSSocket engSocket = new ISOBUSSocket(ibdevice.getEngineBus(), null, pgns);
+		        		ArrayList<ISOBUSSocket> sockets = new  ArrayList<ISOBUSSocket>();
+						ISOBUSSocket impSocket;
+						try {
+							impSocket = new ISOBUSSocket(ibdevice.getImplementBus(), null, pgns);
+							sockets.add(impSocket);
+						} catch (InterruptedException e1) {
+							// TODO Auto-generated catch block
+							e1.printStackTrace();
+						}
+						ISOBUSSocket engSocket;
+						try {
+							engSocket = new ISOBUSSocket(ibdevice.getEngineBus(), null, pgns);
+							sockets.add(engSocket);
+						} catch (InterruptedException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
 						
-						ArrayList<ISOBUSSocket> sockets = new  ArrayList<ISOBUSSocket>();
-						sockets.add(impSocket);
-						sockets.add(engSocket);
-						
+
 						//Dispatch messages to Map 
 						mHandler.obtainMessage(Map.BEGIN_COMMUNICATE,
 								-1, -1, sockets).sendToTarget();
@@ -120,10 +127,7 @@ public class BTAgent {
 						mHandler.obtainMessage(Map.SHOW_TOAST,
 	         					-1, -1, "Connection Estabilished").sendToTarget();
 						
-					} catch (IOException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
+					
     
 				} catch(IOException e) {
 					Log.i("ISOBLUE","UNABLE CONNECT - SERVICE NOT FOUND");
