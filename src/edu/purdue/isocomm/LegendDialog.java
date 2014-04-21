@@ -29,7 +29,6 @@ public class LegendDialog extends DialogFragment {
 	    
 	    
 	    LayoutInflater inflater = ((Activity) mContext).getLayoutInflater();
-//	    getDialog().getWindow().setLayout(00, 500)
         final View modifview = inflater.inflate(R.layout.choose_device_title,null);
         TextView titleX = (TextView)modifview.findViewById(R.id.textView1);
         titleX.setText("Legends");

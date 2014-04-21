@@ -1,6 +1,7 @@
 package edu.purdue.isocomm;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
@@ -101,40 +102,41 @@ public class BTAgent {
 		        	}
 		        	
 		        		ArrayList<ISOBUSSocket> sockets = new  ArrayList<ISOBUSSocket>();
-						ISOBUSSocket impSocket;
-						try {
-							impSocket = new ISOBUSSocket(ibdevice.getImplementBus(), null, pgns);
-							sockets.add(impSocket);
-						} catch (InterruptedException e1) {
-							// TODO Auto-generated catch block
-							e1.printStackTrace();
-						}
-						ISOBUSSocket engSocket;
-						try {
-							engSocket = new ISOBUSSocket(ibdevice.getEngineBus(), null, pgns);
-							sockets.add(engSocket);
-						} catch (InterruptedException e) {
-							// TODO Auto-generated catch block
-							e.printStackTrace();
-						}
+						ISOBUSSocket impSocket, impBufSocket, engSocket, engBufSocket;
 						
+						impSocket = new ISOBUSSocket(ibdevice.getImplementBus(), null, pgns);
+						
+						Serializable messageId = 0;
+						ISOBUSSocket[] bufSockets = ibdevice.createBufferedISOBUSSockets(messageId); //only works after sending stuff
+						impBufSocket = bufSockets[1];
+						engBufSocket = bufSockets[0];
+						
+						sockets.add(impSocket);
+						//sockets.add(impBufSocket);
+
+						engSocket = new ISOBUSSocket(ibdevice.getEngineBus(), null, pgns);
+						sockets.add(engSocket);
+						sockets.add(engBufSocket);
 
 						//Dispatch messages to Map 
 						mHandler.obtainMessage(Map.BEGIN_COMMUNICATE,
 								-1, -1, sockets).sendToTarget();
-					
+						
+						org.isoblue.isobus.Message message = null;
 						
 						mHandler.obtainMessage(Map.SHOW_TOAST,
 	         					-1, -1, "Connection Estabilished").sendToTarget();
-						
-					
-    
+
+
 				} catch(IOException e) {
-					Log.i("ISOBLUE","UNABLE CONNECT - SERVICE NOT FOUND");
+					Log.i("ISOBLUE","IO Exception - No Service");
 					mHandler.obtainMessage(Map.SHOW_TOAST,
          					-1, -1, "Cannot connect to selected ISOBLUE device").sendToTarget();
 					
 		     	    ibdevice = null;
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
 				}
 		    	
 		    }  

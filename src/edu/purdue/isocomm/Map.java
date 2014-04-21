@@ -1,37 +1,20 @@
 package edu.purdue.isocomm;
 
-import java.io.IOException;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 
-import org.isoblue.isoblue.ISOBlueDevice;
 import org.isoblue.isobus.ISOBUSSocket;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapFragment;
-import com.google.android.gms.maps.MapView;
-import com.google.android.gms.maps.Projection;
-import com.google.android.gms.maps.model.BitmapDescriptor;
-import com.google.android.gms.maps.model.BitmapDescriptorFactory;
-import com.google.android.gms.maps.model.CameraPosition;
-import com.google.android.gms.maps.model.Circle;
-import com.google.android.gms.maps.model.CircleOptions;
-import com.google.android.gms.maps.model.GroundOverlay;
-import com.google.android.gms.maps.model.GroundOverlayOptions;
 import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
-import com.google.android.gms.maps.model.Polygon;
-import com.google.android.gms.maps.model.PolygonOptions;
 import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
-import com.google.android.gms.maps.model.VisibleRegion;
 
-
-import android.R.menu;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -40,35 +23,27 @@ import android.app.ActionBar;
 import android.app.Activity;
 import android.app.ProgressDialog;
 import android.bluetooth.BluetoothDevice;
-import android.graphics.Bitmap;
-import android.graphics.Canvas;
 import android.graphics.Color;
-import android.graphics.Paint;
-import android.graphics.Point;
 import android.graphics.drawable.ColorDrawable;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.View;
 import android.view.Window;
-import android.widget.ImageView;
 import android.widget.Toast;
 
 import edu.purdue.isocomm.DataGrabber;
-
+import edu.purdue.isocomm.GeoUtil;
 
 public class Map extends Activity {
 	private GoogleMap mMap;
-	public HashMap<String, LatLng> places;
+//	public HashMap<String, LatLng> places;
 	public static final int CONNECTION_SUCCESS = 1;
 	public static final int BEGIN_COMMUNICATE = 2;
 	public static final int SHOW_PROGRESSBOX = 3;
-	public static final int MAP_DRAW_OVERLAY = 11;
 	public static final int SHOW_TOAST = 4;
-	public static final int TRANSLATE_POINT = 12;
 	public Menu myMenu;
-	public Polyline linePath; 
-	public ArrayList<LatLng> gplist;  //gplist contains all the GPS used to draw path
+	public Polyline linePath, linePath2; 
+	public ArrayList<LatLng> gplist, gplist2;  //gplist contains all the GPS used to draw path
 	public ArrayList<Marker> yieldMarkerList;
 	private SQLController dbcon;
 	private ProgressDialog activeDialog;
@@ -76,9 +51,12 @@ public class Map extends Activity {
 	public static float YIELD_HIGH = 0.26f;
 	public static float YIELD_MEDIUM = 0.24f;
 	public static float YIELD_LOW = 0.20f;
-	public GroundOverlay globaloverlay;
-	public ArrayList<org.isoblue.isobus.Message> gpsbuffer; //gpsbuffer contains all the GPS messages to be decoded
 	
+	public ArrayList<org.isoblue.isobus.Message> gpsbuffer; //gpsbuffer contains all the GPS messages to be decoded
+	public ArrayList<org.isoblue.isobus.Message> gpsbuffer2; //gpsbuffer contains all the GPS messages to be decoded
+	private int gpsbuf_start;
+	int gpsbuf_badstartcount = 0;
+
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -88,19 +66,20 @@ public class Map extends Activity {
 		actionBar.setBackgroundDrawable(new ColorDrawable(Color.parseColor("#99000000")));
 
 		setContentView(R.layout.activity_map);
-
-		places = new HashMap<String, LatLng>();
+		
+		//places = new HashMap<String, LatLng>();
 		
 		//bunch of places we can use as reference
 		//places.put("birck",new LatLng(40.42262549999998, -86.92454150000002));
 		//places.put("ee",new LatLng(40.428903899999995, -86.91123760000002));
 		
 		initMap();
-		//dbcon = new SQLController(Map.this);
+		dbcon = new SQLController(Map.this);
 		//buffer the GPS coordinates for manipulation
 		gpsbuffer = new ArrayList<org.isoblue.isobus.Message>();
-
-		
+		gpsbuffer2 = new ArrayList<org.isoblue.isobus.Message>();
+		gpsbuf_start = 0;
+		gpsbuf_badstartcount = 0;
 	}
 	
 
@@ -124,61 +103,7 @@ public class Map extends Activity {
 					}
 			 	   
 					break;
-				case MAP_DRAW_OVERLAY:
-					Bitmap image = (Bitmap)msg.obj;
-					BitmapDescriptor overlay_img = BitmapDescriptorFactory.fromBitmap(image);
-					 
-					 if(globaloverlay != null){
-						 globaloverlay.remove();
-					 }
-					 
-					 LatLng center_anchor = new LatLng(39.0487286, -86.8766694);
-					 //need to find LatLng to Pixel translation that is consistent
-					 LatLng east_anchor = new LatLng(39.0487286, -86.8766694 + 0.00347);
-					 LatLng west_anchor = new LatLng(39.0487286, -86.8766694 - 0.00347);
-					 LatLng north_anchor = new LatLng(39.0487286 + 0.00266, -86.8766694);
-					 LatLng south_anchor = new LatLng(39.0487286 - 0.00266, -86.8766694);
-					 
-					 
-					/* mMap.addMarker(new MarkerOptions()
-				        .position(east_anchor)
-				        .title("East Mark"));
 					
-					 mMap.addMarker(new MarkerOptions()
-				        .position(west_anchor)
-				        .title("West Mark"));
-					 
-					 mMap.addMarker(new MarkerOptions()
-				        .position(north_anchor)
-				        .title("North Mark"));
-
-					 mMap.addMarker(new MarkerOptions()
-				        .position(south_anchor)
-				        .title("South Mark"));*/
-
-					 
-					 //Test Projection
-					
-					 LatLng house_anchor = new LatLng(39.047214, -86.873819);
-
-					 globaloverlay = mMap.addGroundOverlay(new GroundOverlayOptions()
-			         .image(overlay_img)
-			         .position(center_anchor, 600f, 600f));
-					 
-					 Point markerScreenPosition = mMap.getProjection().toScreenLocation(house_anchor);
-					 Log.i("isoblue","CONVLOC (translated from input) " + markerScreenPosition.x + "," + markerScreenPosition.y);
-					 Point refPosition = mMap.getProjection().toScreenLocation(center_anchor);
-
-					 Log.i("isoblue","CONVLOC (reference center of overlay) " + refPosition.x + "," + refPosition.y);
-					 
-					 Point pixel_center = new Point(refPosition.x,refPosition.y);
-					 Point pixel_target = new Point(markerScreenPosition.x,markerScreenPosition.y);
-					 Point pixel_diff = new Point(pixel_target.x - pixel_center.x,pixel_target.y - pixel_center.y);
-
-					 Log.i("isoblue","CONVLOC (dx,dy) " + pixel_diff.x + "," + pixel_diff.y);
-					 
-					break;
-	
 				case SHOW_PROGRESSBOX:
 			
 					final ProgressDialog syncingbox = ProgressDialog.show(Map.this, "",msg.obj.toString(), true, true);
@@ -200,34 +125,150 @@ public class Map extends Activity {
 					@SuppressWarnings("unchecked")
 					ArrayList<ISOBUSSocket> socks = (ArrayList<ISOBUSSocket>)msg.obj;
 					final ISOBUSSocket imsock = socks.get(0);
+					final ISOBUSSocket bf_imsock = socks.get(1);
+					
+					Log.i("postman","Communication Began");
 					final DataGrabber dgrab = new DataGrabber();
-		
-					Thread ATAX = new Thread(){
+
+					
+				/*	Thread Buffer_Stream_Thread = new Thread(){
+						public void run(){
+							org.isoblue.isobus.Message message = null;
+							while(true){ 
+								try {
+									message = bf_imsock.read();
+									Log.i("postman","BSOCK MEssage ID:" +  message.getId());
+									if (message.getPgn().asInt() == 129029){
+										//@@ TODO: Check that the gpsbuffer starts from 0~6
+										// it can cause parsing error if we just catch 7 messages arbitarily!!!
+										gpsbuffer2.add(message);
+										Log.i("gpsbuffer",gpsbuffer2.size() + "Size");
+										
+									}else if (message.getPgn().asInt() == 65488){
+										final double result = dgrab.yieldData(message);
+										Log.i("postman","BSOCK Yield data " + result);
+										
+										runOnUiThread(new Runnable() {
+								            public void run() {
+								            	
+								            	if(gplist2.size() == 0){
+								            		return;
+								            	}
+								            	
+								            	
+								            	//create new path, don't care about old one 
+								            	linePath2 = mMap.addPolyline(new PolylineOptions()
+									       	     .width(20)
+									       	     .color(Color.WHITE));
+									       		 							            	
+								            	//Clear gplist but retain latest coordinate for curve smoothness
+								            	LatLng LatestCoord = gplist2.get(gplist2.size() - 1);
+								            	gplist2.clear();
+								            	gplist2.add(LatestCoord);
+									       		
+								            	
+								            }
+								        });
+										
+									}
+									
+									if(gpsbuffer2.size() == 7){
+										org.isoblue.isobus.Message[] bar = gpsbuffer2.toArray(new org.isoblue.isobus.Message[7]);
+										final LatLng coord = dgrab.GNSSData(bar);
+
+										Log.i("buffer","GPS data " + coord.latitude + ", " + coord.longitude);
+										gpsbuffer2.clear();										
+										
+										if(gplist2.size() >= 1){
+											LatLng pcoord = gplist2.get(gplist2.size() - 1);
+
+											double ddist = GeoUtil.distanceInMeter(pcoord, coord);
+											Log.i("distdiff","Dist : " + ddist);
+											if(ddist <= 500 && ddist > 0.1){
+												gplist2.add(coord);
+											}
+										}else{
+											gplist2.add(coord);
+										}
+										
+										//Once GPS coordinate is ready, update it on map  
+										runOnUiThread(new Runnable() {
+								            public void run() {
+								            	
+								            	if(gplist2.size() == 1){
+								            		mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(coord, 17.00f)); 
+								            	}
+								            	linePath2.setPoints(gplist2);	
+								            }
+								        });
+										
+									}
+									
+								} catch (InterruptedException e) {
+									// TODO Auto-generated catch block
+									e.printStackTrace();
+								}
+							}
+						}
+					};
+					*/
+					//Buffer_Stream_Thread.start();
+					
+					
+					Thread Normal_Stream_Thread = new Thread(){
 							public void run(){
 								org.isoblue.isobus.Message message = null;
-
+								
+								
 								while(true){ 
 									try {
 										message = imsock.read();
 										dbcon.saveMessage(message);
 										
-										if (message.getPgn().toString().equals("PGN:129029")){
-											//@@ TODO: Check that the gpsbuffer starts from 0~6
-											// it can cause parsing error if we just catch 7 messages arbitarily!!!
-											
-											if(gpsbuffer.size() == 0){
-												byte[] mdata = message.getData();
-//												if(mdata[0] == 00){
-//													gpsbuffer.add(message);
-													//remove below
-//												}
+										if (message.getPgn().asInt() == 129029){
+
+											byte[] xdata = message.getData();
+											int StartByte = xdata[0] & 0x0F; //Unsigned int
+											Log.i("xdata",StartByte + " = 0x" + String.format("%02X ", StartByte));
+
+											if(0 == gpsbuf_start && (StartByte % 10 == 0)){
+												Log.i("xdata","Start byte found" + StartByte);
 												gpsbuffer.add(message);
-											}else if(gpsbuffer.size() > 0){
+												gpsbuf_start = StartByte + 1;
+												Log.i("xdata",StartByte + " = 0x" + String.format("%02X ", StartByte));
+											}else if(gpsbuf_start == StartByte && gpsbuf_start != 0){
+												//If frame buffering has already began
 												gpsbuffer.add(message);
+												gpsbuf_start++;
+											}else if(gpsbuf_start != StartByte && gpsbuf_start != 0 && StartByte == 0){
+												//Begin collecting new frame , clear previous frame buffer
+												gpsbuffer.clear();
+												gpsbuffer.add(message);
+												gpsbuf_start = 1; //look for 0x01 as starting byte for next frame
+										    }else if(gpsbuf_start != StartByte && gpsbuf_start != 0){
+												Log.i("xdata","Bad startbyte, starting over mismatch " + StartByte + " with count " + gpsbuf_start + " Tries: " + gpsbuf_badstartcount);
+												gpsbuf_badstartcount++;
+												
+												if(gpsbuf_badstartcount >= 5){
+													//Try 5 more frames
+													gpsbuffer.clear();
+													gpsbuf_start = 0;
+													gpsbuf_badstartcount = 0;
+												}
 											}
 											
+//											if(gpsbuffer.size() == 0){
+//												Log.i("NMEA","First Byte : " + XD);
+////												if(i == 0){
+//													gpsbuffer.add(message);
+////												}
+//												//gpsbuffer.add(message);
+//											}else if(gpsbuffer.size() > 0){
+//												gpsbuffer.add(message);
+//											}
 											
-										}else if (message.getPgn().toString().equals("PGN:65488")){
+											
+										}else if (message.getPgn().asInt() == 65488){
 											final double result = dgrab.yieldData(message);
 											Log.i("postman","Yield data " + result);
 											
@@ -245,20 +286,20 @@ public class Map extends Activity {
 //									            	markPlace(previous_coord, result + "");
 									            	
 									            	//Color.rgb((int)(255*Math.pow(result*10,2)), 255 - (int)Math.pow(result*50,2), 0)
-									            	int TRESHC = Color.MAGENTA;						            	
+									            	int TRESHC = getResources().getColor(R.color.darkgreen);						            	
 									            	if(result >= Map.YIELD_HIGH){
-									            		TRESHC = Color.GREEN;
+									            		TRESHC = getResources().getColor(R.color.darkgreen);
 									            	}else if(result >= Map.YIELD_MEDIUM){
-									            		TRESHC = Color.YELLOW;
+									            		TRESHC = getResources().getColor(R.color.lightgreen);	
 									            	}else if(result >= Map.YIELD_LOW){
-									            		TRESHC = Color.RED;
+									            		TRESHC = getResources().getColor(R.color.yellow);	
 									            	}else{
-									            		TRESHC = Color.MAGENTA;
+									            		TRESHC = getResources().getColor(R.color.orange);
 									            	}
 									            	
 									            	//create new path, don't care about old one 
 									            	linePath = mMap.addPolyline(new PolylineOptions()
-										       	     .width(5)
+										       	     .width(10)
 										       	     .color(TRESHC));
 										       		 							            	
 									            	//Clear gplist but retain latest coordinate for curve smoothness
@@ -279,8 +320,10 @@ public class Map extends Activity {
 										if(gpsbuffer.size() == 7){
 											org.isoblue.isobus.Message[] bar = gpsbuffer.toArray(new org.isoblue.isobus.Message[7]);
 											final LatLng coord = dgrab.GNSSData(bar);
+
 											Log.i("postman","GPS data " + coord.latitude + ", " + coord.longitude);
-											gpsbuffer.clear();										
+											gpsbuffer.clear();	
+											gpsbuf_start = 0;
 											
 											//compare coord with previous coord 
 											//filter out if they are closer than 1 meter
@@ -290,10 +333,10 @@ public class Map extends Activity {
 												//TODO: Turning point detection 
 												// http://stackoverflow.com/questions/17422314/polylines-appearing-on-map-where-they-shouldnt
 
-												if((Math.abs(coord.latitude - pcoord.latitude) > 0.0000000000001) && (Math.abs(coord.longitude - pcoord.longitude) > 0.0000000000001)){
+												double ddist = GeoUtil.distanceInMeter(pcoord, coord);
+												Log.i("distdiff","Dist : " + ddist);
+												if(ddist <= 500 && ddist > 0.1){
 													gplist.add(coord);
-												}else{
-													Log.i("isoblue","Coordinates too close");
 												}
 											}else{
 												gplist.add(coord);
@@ -323,37 +366,13 @@ public class Map extends Activity {
 							}
 						};
 						
-					ATAX.start();
+					 Normal_Stream_Thread.start();
 				break;
 			}
 		}
 	};
 	
 	
-	GoogleMap.OnCameraChangeListener GetOnCameraChangeListener(){
-		return new GoogleMap.OnCameraChangeListener(){
-
-			@Override
-			public void onCameraChange(CameraPosition position) {
-				// TODO Auto-generated method stub
-				VisibleRegion rVisible = mMap.getProjection().getVisibleRegion();
-				LatLngBounds rVisible_latlng = rVisible.latLngBounds;
-
-				Toast toast = Toast.makeText(Map.this, rVisible_latlng.toString(),Toast.LENGTH_SHORT);
-		 	    toast.show();
-		 	    
-			}
-			
-		};
-	}
-	
-	private void demoDraw(){
-		//Test Ground Overlay
-		 
-		 Thread FastDraw = new BitMapGenerateThread();
-		 FastDraw.start();
-		
-	}
 	
 	private void initMap(){
 		
@@ -361,33 +380,18 @@ public class Map extends Activity {
 		mMap.setMapType(GoogleMap.MAP_TYPE_SATELLITE);
 		
 		 linePath = mMap.addPolyline(new PolylineOptions()
-	     .width(5)
-	     .color(Color.RED));
+	     .width(10)
+	     .color(Color.TRANSPARENT));
+		 
+		 linePath2 = mMap.addPolyline(new PolylineOptions()
+	     .width(10)
+	     .color(Color.WHITE));
 		 
 		 gplist = new ArrayList<LatLng>();
+		 gplist2 = new ArrayList<LatLng>();
 		 yieldMarkerList = new ArrayList<Marker>();
 		 
-		 //Listeners for map
-		 
-		 mMap.setOnCameraChangeListener(GetOnCameraChangeListener());
-
-		// demoDraw();
-		 
-		 
-		 /*for(int i = 0; i< 800; i++){
-			 mMap.addGroundOverlay(new GroundOverlayOptions()
-	         .image(overlay_img)
-	         .position(new LatLng(39.0487236 + (i*8.5*.000001), -86.8766684 + (Math.sin(i)*.00001)), 1.5f, 1.5f));
-			 gplist.add(new LatLng(39.0487236 + (i*8.5*.000001), -86.8766684 + (Math.sin(i)*.00001)));
-			 
-		 }*/
-		 
-		 
 		 linePath.setPoints(gplist);
-		  
-		 
-		 mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(39.0487236, -86.8766694), 17.00f)); 
-		 
 	}
 	
 	//Handles incoming GPS coordinates from BBB sent over bluetooth
@@ -456,8 +460,6 @@ public class Map extends Activity {
 			devListbox.mContext = Map.this;
 			devListbox.setHandler(postman);
 			
-			//Android requires that all UI activities do not hang up the app's main thread
-			//so it must be processed on the separate UI thread
 			//TODO: this could get a bit messy overtime, there may be more elegant way to accomplish this.
 			runOnUiThread(new Runnable() {
 	            public void run() {
@@ -483,119 +485,12 @@ public class Map extends Activity {
 	    			
 	    		break;
 	    		case R.id.action_sim:
-	    			/*Handle_SimulateStuff();
+	    			Handle_SimulateStuff();
 	    			postman.obtainMessage(Map.SHOW_TOAST,
-							-1, -1, "Toggle Numeric Yield").sendToTarget();*/
-//	    			demoDraw();
-	    			final LegendDialog devListbox = new LegendDialog();
-	    			devListbox.mContext = Map.this;
-	    			devListbox.setHandler(postman);
-	    			
-	    			runOnUiThread(new Runnable() {
-	    	            public void run() {
-	    	            	devListbox.show(getFragmentManager(), "btdev"); 
-	    	            }
-	    	        });
-	    			
+							-1, -1, "Toggle Numeric Yield").sendToTarget();
 	    		break;
-	    		
-	    		case R.id.action_history:
-	    			demoDraw();
 	    	}
 	    	return true;
 	    }
-	
-	
-	
-	private class BitMapGenerateThread extends Thread{
-		float[] transposeToOV(GoogleMap maph, 
-							  LatLng coord, 
-							  LatLng refCenter,
-							  int DW, 
-							  int DH){
-			
-			float lin0 = (float) coord.latitude;
-			float lcen0 = (float) refCenter.latitude;
-			float relative_center0 = DH/2;
-			
-			float lin1 = (float) coord.longitude;
-			float lcen1 = (float) refCenter.longitude;
-			float relative_center1 = DW/2;
-					
-			float[] dbx = new float[]{(lin0-lcen0) + relative_center0,
-									  (lin1-lcen1) + relative_center1};
-			return dbx;
-		}
-		
-		public void run(){
-			 //Generate
-			 int DIM_WIDTH = 600;
-			 int DIM_HEIGHT = 600;
-			 Bitmap image = Bitmap.createBitmap(DIM_WIDTH,DIM_HEIGHT,Bitmap.Config.ARGB_8888);
-			 
-			 Canvas canvas = new Canvas(image);
-			 Paint redfp  = new Paint();
-			 Paint boundfp = new Paint();
 
-			 redfp.setColor(Color.RED);
-			 redfp.setStrokeWidth(2);
-			 
-			 boundfp.setColor(Color.YELLOW);
-			 boundfp.setAlpha(10);
-			 boundfp.setStrokeWidth(6);
-
-			 //Center Point
-			 LatLng center_anchor = new LatLng(39.0487286, -86.8766694);
-			 LatLng house_anchor = new LatLng(39.047214, -86.873819);
-
-			 //Draw Square Boundary for debugging
-			 for(int i = 0; i< DIM_WIDTH; i++){
-				 canvas.drawPoint(0, i, boundfp);
-				 canvas.drawPoint(i, 0, boundfp);
-				 canvas.drawPoint(DIM_WIDTH - 1, i, boundfp);
-				 canvas.drawPoint(i, DIM_HEIGHT, boundfp);
-			 }
-	
-			 int k;
-			 for(k=0;k<DIM_HEIGHT;k++){
-				 
-				 LatLng newlat = new LatLng(center_anchor.latitude, 
-						 					center_anchor.longitude + k);
-				 float[] samplingPt = transposeToOV(mMap, newlat, 
-						  center_anchor,
-						  DIM_WIDTH, 
-						  DIM_HEIGHT);
-
-				 canvas.drawPoint(samplingPt[0], samplingPt[1], redfp);
-			 }
-			 
-			 for(k=0;k<DIM_WIDTH*Math.random();k++){
-				 
-				 LatLng newlat = new LatLng(center_anchor.latitude + k, 
-						 					center_anchor.longitude + Math.random()*10 +k);
-				 float[] samplingPt = transposeToOV(mMap, newlat, 
-						  center_anchor,
-						  DIM_WIDTH, 
-						  DIM_HEIGHT);
-
-				 canvas.drawPoint(samplingPt[0], samplingPt[1], redfp);
-			 }
-			 
-			 float[] ieref = transposeToOV(mMap, house_anchor, 
-					  center_anchor,
-					  DIM_WIDTH, 
-					  DIM_HEIGHT);
-			 canvas.drawPoint(ieref[0], ieref[1], redfp);
-			 
-			 
-			
-//
-			 canvas.drawPoint(569, 390,redfp);
-			 
-			 //TODO: Pass in set of width and height
-			 postman.obtainMessage(Map.MAP_DRAW_OVERLAY,
-						-1, -1, image).sendToTarget();
-		}
-		
-	}
 }
