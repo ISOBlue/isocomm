@@ -107,16 +107,16 @@ public class BTAgent {
 						impSocket = new ISOBUSSocket(ibdevice.getImplementBus(), null, pgns);
 						
 						Serializable messageId = 0;
-				/*		ISOBUSSocket[] bufSockets = ibdevice.createBufferedISOBUSSockets(messageId); //only works after sending stuff
+						ISOBUSSocket[] bufSockets = ibdevice.createBufferedISOBUSSockets(messageId); //only works after sending stuff
 						impBufSocket = bufSockets[1];
-						engBufSocket = bufSockets[0];*/
+						engBufSocket = bufSockets[0];
 						
 						sockets.add(impSocket);
-//						sockets.add(impBufSocket);
 
 						engSocket = new ISOBUSSocket(ibdevice.getEngineBus(), null, pgns);
 						sockets.add(engSocket);
-						//sockets.add(engBufSocket);
+						sockets.add(impBufSocket);
+						sockets.add(engBufSocket);
 
 						//Dispatch messages to Map 
 						mHandler.obtainMessage(Map.BEGIN_COMMUNICATE,
@@ -134,6 +134,9 @@ public class BTAgent {
          					-1, -1, "Cannot connect to selected ISOBLUE device").sendToTarget();
 					
 		     	    ibdevice = null;
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
 				} 
 		    	
 		    }  

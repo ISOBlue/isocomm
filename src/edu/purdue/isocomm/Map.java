@@ -145,8 +145,8 @@ public class Map extends Activity {
 						myMenu.getItem(2).setIcon(R.drawable.gdot2);
 						myMenu.getItem(2).setEnabled(false);	
 						ArrayList<ISOBUSSocket> socks = (ArrayList<ISOBUSSocket>)msg.obj;
-						imsock = socks.get(0);
-						engsock = socks.get(1);
+						imsock = socks.get(2);
+						engsock = socks.get(3);
 					
 					 //Thread t = new Thread(new Buffer_Stream_Thread());
 					 //t.start();
@@ -247,8 +247,10 @@ public class Map extends Activity {
 //						}
 //					}
 					done_with_sqlstream = false;
-					Log.i("Reading","reading frm sock..");
+					//Log.i("Reading","reading frm sock..");
 					message = imsock.read();
+					
+					
 					
 					if (message.getPgn().asInt() == PGN_GNSS){
 						if(done_with_sqlstream)
@@ -256,13 +258,13 @@ public class Map extends Activity {
 
 						byte[] xdata = message.getData();
 						int StartByte = xdata[0] & 0x0F; //Unsigned int
-						Log.i("xdata",StartByte + " = 0x" + String.format("%02X ", StartByte));
+						//Log.i("xdata",StartByte + " = 0x" + String.format("%02X ", StartByte));
 
 						if(0 == gpsbuf_start && (StartByte % 10 == 0)){
 							Log.i("xdata","Start byte found" + StartByte);
 							gpsbuffer.add(message);
 							gpsbuf_start = StartByte + 1;
-							Log.i("xdata",StartByte + " = 0x" + String.format("%02X ", StartByte));
+							//Log.i("xdata",StartByte + " = 0x" + String.format("%02X ", StartByte));
 						}else if(gpsbuf_start == StartByte && gpsbuf_start != 0){
 							//If frame buffering has already began
 							gpsbuffer.add(message);
@@ -273,7 +275,7 @@ public class Map extends Activity {
 							gpsbuffer.add(message);
 							gpsbuf_start = 1; //look for 0x01 as starting byte for next frame
 					    }else if(gpsbuf_start != StartByte && gpsbuf_start != 0){
-							Log.i("xdata","Bad startbyte, starting over mismatch " + StartByte + " with count " + gpsbuf_start + " Tries: " + gpsbuf_badstartcount);
+							//Log.i("xdata","Bad startbyte, starting over mismatch " + StartByte + " with count " + gpsbuf_start + " Tries: " + gpsbuf_badstartcount);
 							gpsbuf_badstartcount++;
 							
 							if(gpsbuf_badstartcount >= 5){
@@ -310,7 +312,7 @@ public class Map extends Activity {
 							// http://stackoverflow.com/questions/17422314/polylines-appearing-on-map-where-they-shouldnt
 
 							double ddist = GeoUtil.distanceInMeter(pcoord, coord);
-							Log.i("distdiff","Dist : " + ddist);
+							//Log.i("distdiff","Dist : " + ddist);
 							if(ddist <= 500 && ddist > 0.1){
 								gplist.add(coord);
 							}
@@ -318,7 +320,7 @@ public class Map extends Activity {
 							gplist.add(coord);
 						}
 
-						TimeUnit.MILLISECONDS.sleep(25);
+//						TimeUnit.MILLISECONDS.sleep(200);
 
 						//Once GPS coordinate is ready, update it on map  
 						runOnUiThread(new Runnable() {
@@ -344,156 +346,7 @@ public class Map extends Activity {
 		}
 	}
 	
-//	
-//	public class Buffer_Stream_Thread implements Runnable{
-//		public void run(){
-//			
-//			org.isoblue.isobus.Message message = null;
-//			final DataGrabber dgrab = new DataGrabber();
-//
-//			while(true){ 
-//				try {
-//
-//					message = bf_imsock.read();
-//					
-//					if (message.getPgn().asInt() == PGN_GNSS){
-//						if(done_with_sqlstream)
-//							dbcon.saveMessage(message);
-//
-//						byte[] xdata = message.getData();
-//						int StartByte = xdata[0] & 0x0F; //Unsigned int
-//						Log.i("xdata",StartByte + " = 0x" + String.format("%02X ", StartByte));
-//
-//						if(0 == gpsbuf_start && (StartByte % 10 == 0)){
-//							Log.i("xdata","Start byte found" + StartByte);
-//							gpsbuffer.add(message);
-//							gpsbuf_start = StartByte + 1;
-//							Log.i("xdata",StartByte + " = 0x" + String.format("%02X ", StartByte));
-//						}else if(gpsbuf_start == StartByte && gpsbuf_start != 0){
-//							//If frame buffering has already began
-//							gpsbuffer.add(message);
-//							gpsbuf_start++;
-//						}else if(gpsbuf_start != StartByte && gpsbuf_start != 0 && StartByte == 0){
-//							//Begin collecting new frame , clear previous frame buffer
-//							gpsbuffer.clear();
-//							gpsbuffer.add(message);
-//							gpsbuf_start = 1; //look for 0x01 as starting byte for next frame
-//					    }else if(gpsbuf_start != StartByte && gpsbuf_start != 0){
-//							Log.i("xdata","Bad startbyte, starting over mismatch " + StartByte + " with count " + gpsbuf_start + " Tries: " + gpsbuf_badstartcount);
-//							gpsbuf_badstartcount++;
-//							
-//							if(gpsbuf_badstartcount >= 5){
-//								//Try 5 more frames
-//								gpsbuffer.clear();
-//								gpsbuf_start = 0;
-//								gpsbuf_badstartcount = 0;
-//							}
-//						}
-//						
-//						
-//					}else if (message.getPgn().asInt() == PGN_YIELD){
-//						final double result = dgrab.yieldData(message);
-//						Log.i("postman","Yield data " + result);
-//						
-//						if(done_with_sqlstream)
-//							dbcon.saveMessage(message); //Save single Yield message
-//						
-//						runOnUiThread(new Runnable() {
-//				            public void run() {
-//				            	
-//				            	if(gplist.size() == 0){
-//				            		//if there no decoded GPS coordinate ready
-//				            		//do nothing
-//				            		return;
-//				            	}
-//				            	
-//				            	//plot yield data at latest coordinate
-//				            	LatLng previous_coord = gplist.get(gplist.size() - 1);
-////				            	markPlace(previous_coord, result + "");
-//				            	
-//				            	//Color.rgb((int)(255*Math.pow(result*10,2)), 255 - (int)Math.pow(result*50,2), 0)
-//				            	int TRESHC = getResources().getColor(R.color.darkgreen);						            	
-//				            	if(result >= Map.YIELD_HIGH){
-//				            		TRESHC = getResources().getColor(R.color.darkgreen);
-//				            	}else if(result >= Map.YIELD_MEDIUM){
-//				            		TRESHC = getResources().getColor(R.color.lightgreen);	
-//				            	}else if(result >= Map.YIELD_LOW){
-//				            		TRESHC = getResources().getColor(R.color.yellow);	
-//				            	}else{
-//				            		TRESHC = getResources().getColor(R.color.orange);
-//				            	}
-//				            	
-//				            	//create new path, don't care about old one 
-//				            	linePath = mMap.addPolyline(new PolylineOptions()
-//					       	     .width(10)
-//					       	     .color(TRESHC));
-//					       		 							            	
-//				            	//Clear gplist but retain latest coordinate for curve smoothness
-//				            	LatLng LatestCoord = gplist.get(gplist.size() - 1);
-//					       		gplist.clear();
-//					       		gplist.add(LatestCoord);
-//					       		
-//				            	
-//				            }
-//				        });
-//						
-//					}
-//					
-//					//If FastPackets are ready to be process
-//					//send them to DataGrabber
-//				
-//					
-//					if(gpsbuffer.size() == 7){
-//						
-//						org.isoblue.isobus.Message[] bar = gpsbuffer.toArray(new org.isoblue.isobus.Message[7]);
-//						final LatLng coord = dgrab.GNSSData(bar);
-//
-//						Log.i("postman","GPS data " + coord.latitude + ", " + coord.longitude);
-//						gpsbuffer.clear();	
-//						gpsbuf_start = 0;
-//						
-//						//compare coord with previous coord 
-//						//filter out if they are closer than 1 meter
-//
-//						if(gplist.size() > 1){
-//							LatLng pcoord = gplist.get(gplist.size() - 1);
-//							//TODO: Turning point detection 
-//							// http://stackoverflow.com/questions/17422314/polylines-appearing-on-map-where-they-shouldnt
-//
-//							double ddist = GeoUtil.distanceInMeter(pcoord, coord);
-//							Log.i("distdiff","Dist : " + ddist);
-//							if(ddist <= 500 && ddist > 0.1){
-//								gplist.add(coord);
-//							}
-//						}else{
-//							gplist.add(coord);
-//						}
-//
-//						TimeUnit.MILLISECONDS.sleep(25);
-//
-//						//Once GPS coordinate is ready, update it on map  
-//						runOnUiThread(new Runnable() {
-//				            public void run() {
-//				            	
-//				            	if(gplist.size() == 1){
-//				            		mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(coord, 17.00f)); 
-//				            	}
-//				            	linePath2.setPoints(gplist);	
-//				            }
-//				        });
-//						
-//					}
-//																									
-//				} catch (InterruptedException e) {
-//					// TODO Auto-generated catch block
-//					e.printStackTrace();
-//				}
-//				
-//				
-//			}
-//		}
-//	}
-//	
+
 	
 	private void initMap(){
 		
