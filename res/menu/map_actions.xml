@@ -3,7 +3,7 @@
       xmlns:yourapp="http://schemas.android.com/apk/res-auto" >
      
    
-     <item android:id="@+id/history"
+     <item android:id="@+id/action_history"
           android:showAsAction="always"
           android:icon="@drawable/clock"
          />

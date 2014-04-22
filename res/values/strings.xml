@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <string name="app_name">ISOComm</string>
+    <string name="app_name">ISOBlue Tracker</string>
     <string name="action_settings">Settings</string>
     <string name="hello_world">Hello world!</string>
     <string name="connect">Connect</string>
-    <string name="pick_device">Select an ISOBlue-enabled Device</string>
+    <string name="pick_device">Select an ISOBlue Device</string>
      <string name="yield">Yield</string>
     
 </resources>

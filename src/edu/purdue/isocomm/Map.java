@@ -54,11 +54,14 @@ public class Map extends Activity {
 	
 	private boolean done_with_sqlstream;
 	private ArrayList<IRecord> sqlstream_records;
-	private ISOBUSSocket imsock, bf_imsock;
+	public ISOBUSSocket imsock, bf_imsock, engsock;
 	
 	private static float YIELD_HIGH = 0.26f;
 	private static float YIELD_MEDIUM = 0.24f;
 	private static float YIELD_LOW = 0.20f;
+	
+	private static double YIELD_MAX = 0.19;
+	
 	private static int PGN_GNSS = 129029;
 	private static int PGN_YIELD = 65488;
 
@@ -67,7 +70,7 @@ public class Map extends Activity {
 	private int gpsbuf_start;
 	private int gpsbuf_badstartcount = 0;
 	
-	
+	private ColorMapper<Double> cmapper;
 
 
 	@Override
@@ -90,7 +93,8 @@ public class Map extends Activity {
 		gpsbuf_badstartcount = 0;
 		done_with_sqlstream = false;
 		
-		loadFromSQLite();
+		//loadFromSQLite();
+		cmapper = new ColorMapper<Double>((double) 0.15,YIELD_MAX);
 	}
 	
 	private void loadFromSQLite(){
@@ -137,49 +141,114 @@ public class Map extends Activity {
 					
 				case BEGIN_COMMUNICATE:
 						
-					
-					if(done_with_sqlstream){
 						myMenu.getItem(2).setTitle("Live");
 						myMenu.getItem(2).setIcon(R.drawable.gdot2);
 						myMenu.getItem(2).setEnabled(false);	
 						ArrayList<ISOBUSSocket> socks = (ArrayList<ISOBUSSocket>)msg.obj;
 						imsock = socks.get(0);
-						bf_imsock = socks.get(1);
-					}else{
-						myMenu.getItem(2).setTitle("Buffering");
-					}
-						
-
-					 Thread t = new Thread(new Normal_Stream_Thread());
-					 t.start();
+						engsock = socks.get(1);
+					
+					 //Thread t = new Thread(new Buffer_Stream_Thread());
+					 //t.start();
+					 Thread t2 = new Thread(new Normal_Stream_Thread());
+					 t2.start();
+					 
+					 Thread t_imp = new Thread(new Engine_Read());
+					 t_imp.start();
+					 
 				break;
 
 			}
 		}
 	};
 	
+	public class Engine_Read implements Runnable{
+		public void run(){
+			org.isoblue.isobus.Message message = null;
+			
+			final DataGrabber dgrab = new DataGrabber();
+
+			while(true){
+				try{
+				message = engsock.read();
+				if (message.getPgn().asInt() == PGN_YIELD){
+					final double result = dgrab.yieldData(message);
+					Log.i("postman","Yield data " + result);
+					
+					if(done_with_sqlstream)
+						dbcon.saveMessage(message); //Save single Yield message
+					
+					runOnUiThread(new Runnable() {
+			            public void run() {
+			            	
+			            	if(gplist.size() == 0){
+			            		//if there no decoded GPS coordinate ready
+			            		//do nothing
+			            		return;
+			            	}
+			            	
+			            	//plot yield data at latest coordinate
+			            	LatLng previous_coord = gplist.get(gplist.size() - 1);
+//			            	markPlace(previous_coord, result + "");
+
+			            	int TRESHC = cmapper.map(result);
+			            	
+			            	//create new path, don't care about old one 
+			            	linePath = mMap.addPolyline(new PolylineOptions()
+				       	     .width(20)
+				       	     .color(TRESHC));
+				       		 							            	
+			            	//Clear gplist but retain latest coordinate for curve smoothness
+			            	LatLng LatestCoord = gplist.get(gplist.size() - 1);
+				       		gplist.clear();
+				       		gplist.add(LatestCoord);
+				       		
+			            	
+			            }
+			        });
+				
+					
+				}
+				} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+				}
+			}
+			
+				 
+			
+		}
+	}
 	
 	public class Normal_Stream_Thread implements Runnable{
 		public void run(){
+			
 			org.isoblue.isobus.Message message = null;
 			final DataGrabber dgrab = new DataGrabber();
 
 			while(true){ 
 				try {
-					if(done_with_sqlstream && imsock != null){
-						//If Done with SQL data use live socket data
-						message = imsock.read();
-					}else{
-						//Use SQL old data
-						if(sqlstream_records.size() == 0){
-							//can pop no maor
-							done_with_sqlstream = true;
-							continue;
-						}else{
-							Log.i("ThreadNST","popping");
-							message = sqlstream_records.remove(0).asMsg();
-						}
-					}
+//					if(done_with_sqlstream){
+//						//If Done with SQL data use live socket data
+//						message = imsock.read();
+//					}else{
+//						//Use SQL old data
+//						
+//						if(sqlstream_records.size() == 0){
+//							//can pop no maor
+//							done_with_sqlstream = true;
+//							Log.i("sqlstream", "done with sqltream");
+//							postman.obtainMessage(Map.SHOW_TOAST,
+//									-1, -1, "Using Live Data").sendToTarget();
+//							continue;
+//						}else{
+//							Log.i("ThreadNST","popping");
+//							message = sqlstream_records.remove(0).asMsg();
+//						}
+//					}
+					done_with_sqlstream = false;
+					Log.i("Reading","reading frm sock..");
+					message = imsock.read();
 					
 					if (message.getPgn().asInt() == PGN_GNSS){
 						if(done_with_sqlstream)
@@ -216,53 +285,8 @@ public class Map extends Activity {
 						}
 						
 						
-					}else if (message.getPgn().asInt() == PGN_YIELD){
-						final double result = dgrab.yieldData(message);
-						Log.i("postman","Yield data " + result);
-						
-						if(done_with_sqlstream)
-							dbcon.saveMessage(message); //Save single Yield message
-						
-						runOnUiThread(new Runnable() {
-				            public void run() {
-				            	
-				            	if(gplist.size() == 0){
-				            		//if there no decoded GPS coordinate ready
-				            		//do nothing
-				            		return;
-				            	}
-				            	
-				            	//plot yield data at latest coordinate
-				            	LatLng previous_coord = gplist.get(gplist.size() - 1);
-//				            	markPlace(previous_coord, result + "");
-				            	
-				            	//Color.rgb((int)(255*Math.pow(result*10,2)), 255 - (int)Math.pow(result*50,2), 0)
-				            	int TRESHC = getResources().getColor(R.color.darkgreen);						            	
-				            	if(result >= Map.YIELD_HIGH){
-				            		TRESHC = getResources().getColor(R.color.darkgreen);
-				            	}else if(result >= Map.YIELD_MEDIUM){
-				            		TRESHC = getResources().getColor(R.color.lightgreen);	
-				            	}else if(result >= Map.YIELD_LOW){
-				            		TRESHC = getResources().getColor(R.color.yellow);	
-				            	}else{
-				            		TRESHC = getResources().getColor(R.color.orange);
-				            	}
-				            	
-				            	//create new path, don't care about old one 
-				            	linePath = mMap.addPolyline(new PolylineOptions()
-					       	     .width(10)
-					       	     .color(TRESHC));
-					       		 							            	
-				            	//Clear gplist but retain latest coordinate for curve smoothness
-				            	LatLng LatestCoord = gplist.get(gplist.size() - 1);
-					       		gplist.clear();
-					       		gplist.add(LatestCoord);
-					       		
-				            	
-				            }
-				        });
-						
 					}
+					
 					
 					//If FastPackets are ready to be process
 					//send them to DataGrabber
@@ -294,15 +318,16 @@ public class Map extends Activity {
 							gplist.add(coord);
 						}
 
-						TimeUnit.MILLISECONDS.sleep(100);
+						TimeUnit.MILLISECONDS.sleep(25);
 
 						//Once GPS coordinate is ready, update it on map  
 						runOnUiThread(new Runnable() {
 				            public void run() {
 				            	
-				            	if(gplist.size() == 1){
-				            		mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(coord, 17.00f)); 
-				            	}
+				            	/*if(gplist.size() == 1){
+				            		mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(coord, 17.00f));
+				            		 
+				            	}*/
 								linePath.setPoints(gplist);	
 				            }
 				        });
@@ -319,6 +344,156 @@ public class Map extends Activity {
 		}
 	}
 	
+//	
+//	public class Buffer_Stream_Thread implements Runnable{
+//		public void run(){
+//			
+//			org.isoblue.isobus.Message message = null;
+//			final DataGrabber dgrab = new DataGrabber();
+//
+//			while(true){ 
+//				try {
+//
+//					message = bf_imsock.read();
+//					
+//					if (message.getPgn().asInt() == PGN_GNSS){
+//						if(done_with_sqlstream)
+//							dbcon.saveMessage(message);
+//
+//						byte[] xdata = message.getData();
+//						int StartByte = xdata[0] & 0x0F; //Unsigned int
+//						Log.i("xdata",StartByte + " = 0x" + String.format("%02X ", StartByte));
+//
+//						if(0 == gpsbuf_start && (StartByte % 10 == 0)){
+//							Log.i("xdata","Start byte found" + StartByte);
+//							gpsbuffer.add(message);
+//							gpsbuf_start = StartByte + 1;
+//							Log.i("xdata",StartByte + " = 0x" + String.format("%02X ", StartByte));
+//						}else if(gpsbuf_start == StartByte && gpsbuf_start != 0){
+//							//If frame buffering has already began
+//							gpsbuffer.add(message);
+//							gpsbuf_start++;
+//						}else if(gpsbuf_start != StartByte && gpsbuf_start != 0 && StartByte == 0){
+//							//Begin collecting new frame , clear previous frame buffer
+//							gpsbuffer.clear();
+//							gpsbuffer.add(message);
+//							gpsbuf_start = 1; //look for 0x01 as starting byte for next frame
+//					    }else if(gpsbuf_start != StartByte && gpsbuf_start != 0){
+//							Log.i("xdata","Bad startbyte, starting over mismatch " + StartByte + " with count " + gpsbuf_start + " Tries: " + gpsbuf_badstartcount);
+//							gpsbuf_badstartcount++;
+//							
+//							if(gpsbuf_badstartcount >= 5){
+//								//Try 5 more frames
+//								gpsbuffer.clear();
+//								gpsbuf_start = 0;
+//								gpsbuf_badstartcount = 0;
+//							}
+//						}
+//						
+//						
+//					}else if (message.getPgn().asInt() == PGN_YIELD){
+//						final double result = dgrab.yieldData(message);
+//						Log.i("postman","Yield data " + result);
+//						
+//						if(done_with_sqlstream)
+//							dbcon.saveMessage(message); //Save single Yield message
+//						
+//						runOnUiThread(new Runnable() {
+//				            public void run() {
+//				            	
+//				            	if(gplist.size() == 0){
+//				            		//if there no decoded GPS coordinate ready
+//				            		//do nothing
+//				            		return;
+//				            	}
+//				            	
+//				            	//plot yield data at latest coordinate
+//				            	LatLng previous_coord = gplist.get(gplist.size() - 1);
+////				            	markPlace(previous_coord, result + "");
+//				            	
+//				            	//Color.rgb((int)(255*Math.pow(result*10,2)), 255 - (int)Math.pow(result*50,2), 0)
+//				            	int TRESHC = getResources().getColor(R.color.darkgreen);						            	
+//				            	if(result >= Map.YIELD_HIGH){
+//				            		TRESHC = getResources().getColor(R.color.darkgreen);
+//				            	}else if(result >= Map.YIELD_MEDIUM){
+//				            		TRESHC = getResources().getColor(R.color.lightgreen);	
+//				            	}else if(result >= Map.YIELD_LOW){
+//				            		TRESHC = getResources().getColor(R.color.yellow);	
+//				            	}else{
+//				            		TRESHC = getResources().getColor(R.color.orange);
+//				            	}
+//				            	
+//				            	//create new path, don't care about old one 
+//				            	linePath = mMap.addPolyline(new PolylineOptions()
+//					       	     .width(10)
+//					       	     .color(TRESHC));
+//					       		 							            	
+//				            	//Clear gplist but retain latest coordinate for curve smoothness
+//				            	LatLng LatestCoord = gplist.get(gplist.size() - 1);
+//					       		gplist.clear();
+//					       		gplist.add(LatestCoord);
+//					       		
+//				            	
+//				            }
+//				        });
+//						
+//					}
+//					
+//					//If FastPackets are ready to be process
+//					//send them to DataGrabber
+//				
+//					
+//					if(gpsbuffer.size() == 7){
+//						
+//						org.isoblue.isobus.Message[] bar = gpsbuffer.toArray(new org.isoblue.isobus.Message[7]);
+//						final LatLng coord = dgrab.GNSSData(bar);
+//
+//						Log.i("postman","GPS data " + coord.latitude + ", " + coord.longitude);
+//						gpsbuffer.clear();	
+//						gpsbuf_start = 0;
+//						
+//						//compare coord with previous coord 
+//						//filter out if they are closer than 1 meter
+//
+//						if(gplist.size() > 1){
+//							LatLng pcoord = gplist.get(gplist.size() - 1);
+//							//TODO: Turning point detection 
+//							// http://stackoverflow.com/questions/17422314/polylines-appearing-on-map-where-they-shouldnt
+//
+//							double ddist = GeoUtil.distanceInMeter(pcoord, coord);
+//							Log.i("distdiff","Dist : " + ddist);
+//							if(ddist <= 500 && ddist > 0.1){
+//								gplist.add(coord);
+//							}
+//						}else{
+//							gplist.add(coord);
+//						}
+//
+//						TimeUnit.MILLISECONDS.sleep(25);
+//
+//						//Once GPS coordinate is ready, update it on map  
+//						runOnUiThread(new Runnable() {
+//				            public void run() {
+//				            	
+//				            	if(gplist.size() == 1){
+//				            		mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(coord, 17.00f)); 
+//				            	}
+//				            	linePath2.setPoints(gplist);	
+//				            }
+//				        });
+//						
+//					}
+//																									
+//				} catch (InterruptedException e) {
+//					// TODO Auto-generated catch block
+//					e.printStackTrace();
+//				}
+//				
+//				
+//			}
+//		}
+//	}
+//	
 	
 	private void initMap(){
 		
@@ -326,11 +501,11 @@ public class Map extends Activity {
 		mMap.setMapType(GoogleMap.MAP_TYPE_SATELLITE);
 		
 		 linePath = mMap.addPolyline(new PolylineOptions()
-	     .width(10)
+	     .width(20)
 	     .color(Color.TRANSPARENT));
 		 
 		 linePath2 = mMap.addPolyline(new PolylineOptions()
-	     .width(10)
+	     .width(20)
 	     .color(Color.WHITE));
 		 
 		 gplist = new ArrayList<LatLng>();
@@ -338,6 +513,8 @@ public class Map extends Activity {
 		 yieldMarkerList = new ArrayList<Marker>();
 		 
 		 linePath.setPoints(gplist);
+		 
+		 mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(40.988075256347656, -86.1761245727539), 17.00f));
 	}
 	
 	//Handles incoming GPS coordinates from BBB sent over bluetooth

@@ -2,4 +2,9 @@
 <resources>
     <color name="isoblue">#093a8f</color>
      <color name="white">#FFFFFF</color>
+     <color name="lightgreen">#69c355</color>
+     <color name="darkgreen">#57a246</color>
+          <color name="yellow">#d2c300</color>
+          <color name="orange">#e79900</color>
+          
 </resources>

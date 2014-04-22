@@ -17,7 +17,7 @@ public class SQLController extends SQLiteOpenHelper {
 
 	
 	public SQLController(Context ac) {
-		  super(ac, "isochives2.db", null, 1);
+		  super(ac, "isochives24.db", null, 1);
 	}
 
 	@Override
