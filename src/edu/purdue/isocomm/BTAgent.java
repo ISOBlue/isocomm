@@ -105,15 +105,14 @@ public class BTAgent {
 						ISOBUSSocket impSocket, impBufSocket, engSocket, engBufSocket;
 					
 						impSocket = new ISOBUSSocket(ibdevice.getImplementBus(), null, pgns);
-						
+						engSocket = new ISOBUSSocket(ibdevice.getEngineBus(), null, pgns);
+
 						Serializable messageId = 0;
 						ISOBUSSocket[] bufSockets = ibdevice.createBufferedISOBUSSockets(messageId); //only works after sending stuff
 						impBufSocket = bufSockets[1];
 						engBufSocket = bufSockets[0];
 						
 						sockets.add(impSocket);
-
-						engSocket = new ISOBUSSocket(ibdevice.getEngineBus(), null, pgns);
 						sockets.add(engSocket);
 						sockets.add(impBufSocket);
 						sockets.add(engBufSocket);
