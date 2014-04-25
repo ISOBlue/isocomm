@@ -81,9 +81,7 @@ public class BTAgent {
 	
 	public boolean getIBDevice(final BluetoothDevice mdev){
 //		ISOBlueDevice ibd = null;
-//		
-		
-		
+				
 		Thread KONNECT = new Thread() {
 		    public void run() {
 		    	try {

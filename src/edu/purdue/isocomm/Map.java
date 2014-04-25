@@ -1,6 +1,7 @@
 package edu.purdue.isocomm;
 
 import java.util.ArrayList;
+import java.util.concurrent.TimeUnit;
 
 import org.isoblue.isobus.ISOBUSSocket;
 
@@ -77,8 +78,6 @@ public class Map extends Activity {
 		//buffer the GPS coordinates for manipulation
 		gpsbuffer = new ArrayList<org.isoblue.isobus.Message>();
 		gpsbuffer2 = new ArrayList<org.isoblue.isobus.Message>();
-
-		//### gpsbuffer2 = new ArrayList<org.isoblue.isobus.Message>();
 		
 		gpsbuf_start = 0;
 		gpsbuf_badstartcount = 0;
@@ -138,17 +137,18 @@ public class Map extends Activity {
 						imsock_b = socks.get(2);
 						engsock_b = socks.get(3);
 
+						//Messy 
+						
 						 Thread n1 = new Thread(new Normal_Stream_Thread_EN());
 						 Thread n2 = new Thread(new Normal_Stream_Thread_IM());
+						 Thread n3 = new Thread(new Buffer_Stream_Thread_EN());
+						 Thread n4 = new Thread(new Buffer_Stream_Thread_IM());
 
 						 n1.start();
 						 n2.start();
-							 
-//					 Thread n3 = new Thread(new Buffer_Stream_Thread_EN());
-//					 Thread n4 = new Thread(new Buffer_Stream_Thread_IM());
 
-//					 n3.start();
-//					 n4.start();
+						 n3.start();
+						 n4.start();
 
 				break;
 
@@ -180,22 +180,21 @@ public class Map extends Activity {
 			            	}
 			            	
 			            	//plot yield data at latest coordinate
-			            	LatLng previous_coord = gplist.get(gplist.size() - 1);
-//			            	markPlace(previous_coord, result + "");
+			            	//	markPlace(previous_coord, result + "");
 
 			            	int TRESHC = cmapper.map(result);
 			            	
 			            	//create new path, don't care about old one 
-			            	linePath = mMap.addPolyline(new PolylineOptions()
-				       	     .width(20)
-				       	     .color(TRESHC));
-				       		 							            	
-			            	//Clear gplist but retain latest coordinate for curve smoothness
-			            	LatLng LatestCoord = gplist.get(gplist.size() - 1);
-				       		gplist.clear();
-				       		gplist.add(LatestCoord);
-				       		
-			            	
+			            	if(gplist.size() >= 5){
+			            		LatLng LatestCoord = gplist.get(gplist.size() - 1);
+			            		linePath = mMap.addPolyline(new PolylineOptions()
+					       	     .width(20)
+					       	     .color(TRESHC));	
+			            		//Clear gplist but retain latest coordinate for curve smoothness
+					       	gplist.clear();
+					       	gplist.add(LatestCoord);
+			            	}
+			            				            	
 			            }
 			        });
 				
@@ -221,7 +220,7 @@ public class Map extends Activity {
 			while(true){ 
 				try {
 
-					Log.i("Reading","reading frm sock Imp..");
+					Log.i("Reading","reading from implement socket..");
 					message = imsock.read();
 					
 					
@@ -271,6 +270,8 @@ public class Map extends Activity {
 						final LatLng coord = dgrab.GNSSData(bar);
 
 						Log.i("postman","GPS data " + coord.latitude + ", " + coord.longitude);
+					
+						
 						gpsbuffer.clear();	
 						gpsbuf_start = 0;
 						
@@ -284,7 +285,7 @@ public class Map extends Activity {
 
 							double ddist = GeoUtil.distanceInMeter(pcoord, coord);
 							//Log.i("distdiff","Dist : " + ddist);
-							if(ddist <= 500 && ddist > 0.1){
+							if(ddist <= 100 && ddist > 0.5){
 								gplist.add(coord);
 							}
 						}else{
@@ -301,6 +302,7 @@ public class Map extends Activity {
 				            		mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(coord, 17.00f));
 				            		 
 				            	}*/
+				            	Log.i("gplist_size",gplist.size() + " points");
 								linePath.setPoints(gplist);	
 				            }
 				        });
@@ -328,8 +330,6 @@ public class Map extends Activity {
 
 					//Log.i("Reading","reading frm sock..");
 					message = imsock_b.read();
-					
-					
 					
 					if (message.getPgn().asInt() == PGN_GNSS){
 
@@ -376,6 +376,8 @@ public class Map extends Activity {
 						org.isoblue.isobus.Message[] bar = gpsbuffer2.toArray(new org.isoblue.isobus.Message[7]);
 						final LatLng coord = dgrab.GNSSData(bar);
 
+//						TimeUnit.MILLISECONDS.sleep(50);
+
 						Log.i("postman","GPS data " + coord.latitude + ", " + coord.longitude);
 						gpsbuffer2.clear();	
 						gpsbuf_start2 = 0;
@@ -390,7 +392,7 @@ public class Map extends Activity {
 
 							double ddist = GeoUtil.distanceInMeter(pcoord, coord);
 							//Log.i("distdiff","Dist : " + ddist);
-							if(ddist <= 500 && ddist > 0.1){
+							if(ddist <= 100 && ddist > 0.5){
 								gplist2.add(coord);
 							}
 						}else{
@@ -447,15 +449,19 @@ public class Map extends Activity {
 
 			            	int TRESHC = cmapper.map(result);
 			            	
+			            	if(gplist2.size() >= 5){
 			            	//create new path, don't care about old one 
-			            	linePath2 = mMap.addPolyline(new PolylineOptions()
-				       	     .width(10)
-				       	     .color(TRESHC));
-				       		 							            	
-			            	//Clear gplist but retain latest coordinate for curve smoothness
-			            	LatLng LatestCoord = gplist2.get(gplist2.size() - 1);
-				       		gplist2.clear();
-				       		gplist2.add(LatestCoord);
+				            	linePath2 = mMap.addPolyline(new PolylineOptions()
+					       	     .width(20)
+					       	     .color(TRESHC));
+				            	
+					       		 							            	
+				            	//Clear gplist but retain latest coordinate for curve smoothness
+				            	LatLng LatestCoord = gplist2.get(gplist2.size() - 1);
+					       		gplist2.clear();
+					       		gplist2.add(LatestCoord);
+				       		
+			            	}
 				       		
 			            	
 			            }
@@ -481,11 +487,11 @@ public class Map extends Activity {
 		
 		 linePath = mMap.addPolyline(new PolylineOptions()
 	     .width(20)
-	     .color(Color.TRANSPARENT));
+	     .color(Color.RED));
 		 
 		 linePath2 = mMap.addPolyline(new PolylineOptions()
-	     .width(10)
-	     .color(Color.TRANSPARENT));
+	     .width(20)
+	     .color(Color.RED));
 		 
 		 gplist = new ArrayList<LatLng>();
 		 gplist2 = new ArrayList<LatLng>();
@@ -496,25 +502,6 @@ public class Map extends Activity {
 		 linePath2.setPoints(gplist2);
 
 		 mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(40.988075256347656, -86.1761245727539), 17.00f));
-	}
-	
-	//Handles incoming GPS coordinates from BBB sent over bluetooth
-	public void markPlace(LatLng point, String lbl){
-
-		Marker newmk = mMap.addMarker(new MarkerOptions()
-        .position(point)
-        .title("Yield Data")
-        .snippet(lbl));
-
-		
-		if(yieldMarkerList.size() > 0){
-			if(!yieldMarkerList.get(0).isVisible()){
-				newmk.setVisible(false);
-			}
-		}
-		
-		yieldMarkerList.add(newmk);
-		
 	}
 	
 	
@@ -585,12 +572,7 @@ public class Map extends Activity {
 	 public boolean onOptionsItemSelected(MenuItem item) {
 	    	switch(item.getItemId()){
 	    		case R.id.action_history:
-				 Thread n3 = new Thread(new Buffer_Stream_Thread_EN());
-				 Thread n4 = new Thread(new Buffer_Stream_Thread_IM());
 
-					
-			     n3.start();
-				 n4.start();
 
 	    		break;
 	    		case R.id.action_search:
@@ -598,7 +580,6 @@ public class Map extends Activity {
 	    			
 	    		break;
 	    		case R.id.action_sim:
-	    			Handle_SimulateStuff();
 	    			postman.obtainMessage(Map.SHOW_TOAST,
 							-1, -1, "Toggle Numeric Yield").sendToTarget();
 	    		break;
