@@ -1,10 +1,8 @@
 isocomm
 =======
-isocomm is an android application demoing the capability of the [ISOBlue](http://isoblue.org) [Android Library](https://github.com/ISOBlue/isoblue-android)
+isocomm is a basic "Yield Monitor" android application that uses the [ISOBlue](http://isoblue.org) [Android Library](https://github.com/ISOBlue/isoblue-android).
 Functionalities include:
-- receives ISOBus messages from ISOBlue-enabled-combine via bluetooth.
-- display and store useful ISOBus data such as yield, location, temperature etc. in realtime.
+- receives ISO Bus messages from ISOBlue-enabled BeagleBone Black via Bluetooth.
+- display ISO Bus messages such as yield and location.
 - process data and visualize them on Google Maps in realtime
-- other useful things
-
-
+- ability to receive buffered data that were logged when not in close proximity 
