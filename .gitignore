@@ -1,5 +1,4 @@
-bin/*
-bin/classes/*
+bin
 lint.xml
-gen/*
+gen
 *.txt
