@@ -23,7 +23,6 @@
  * IN THE SOFTWARE.
  */
 
-
 package edu.purdue.isocomm;
 
 import java.io.IOException;
@@ -44,13 +43,13 @@ import android.os.Handler;
 import android.util.Log;
 import android.widget.Toast;
 
-
 public class BTAgent {
 	private final BluetoothAdapter mBluetoothAdapter;
 	public int ConnectorStatus;
 	private final Handler mHandler;
 	private final Context mContext;
 	public ISOBlueDevice ibdevice;
+	
 	public static int STATUS_NO_BT = 2;
 	public static int STATUS_BT_OFF = 1;
 	public static int STATUS_BT_ON = 0;
@@ -60,15 +59,13 @@ public class BTAgent {
 		mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
 		mHandler = handler;
 		if (mBluetoothAdapter == null) {
-			Log.i("ISOCOMM","Bluetooth is not supported.");
+			Log.i("BTAG","Bluetooth is not supported.");
 			ConnectorStatus = STATUS_NO_BT;
 		}else{
 			if (!mBluetoothAdapter.isEnabled()) {
-		        //bluetooth is off
 		 	    ConnectorStatus = STATUS_BT_OFF;
 		    }else{ 
-		    	//bluetooth is on
-		    	Log.i("ISOCOMM","Bluetooth is ON. We are good to go.");
+		    	Log.i("BTAG","Bluetooth is ON. We are good to go.");
 		    	ConnectorStatus = STATUS_BT_ON;
 		    }		
 		}
@@ -91,15 +88,15 @@ public class BTAgent {
 			return;
 		}
 		
-		Log.i("ISOCOMM","Listing paired devices..");
+		Log.i("BTAG","Listing paired devices..");
 		Set<BluetoothDevice> pairedDevices = mBluetoothAdapter.getBondedDevices();
 		//If there are paired devices
 		if (pairedDevices.size() > 0) {
-			Log.i("ISOCOMM","Turns out there are!");
+			Log.i("BTAG","Turns out there are!");
 		    // Loop through paired devices
 		    for (BluetoothDevice device : pairedDevices) {
 		        // Add the name and address to an array adapter to show in a ListView
-		    	Log.i("ISOCOMM",device.getName());
+		    	Log.i("BTAG",device.getName());
 		    	j.add(device);
 		    }
 		}
@@ -111,28 +108,33 @@ public class BTAgent {
 		Thread KONNECT = new Thread() {
 		    public void run() {
 		    	try {
-		    		mHandler.obtainMessage(Map.SHOW_PROGRESSBOX,
-		    				-1, -1, "Connecting please wait..").sendToTarget();
-
-				    //Creating the ISOBlueDevice initiates the connection with the ISOBlue
-		    		ibdevice = new ISOBlueDevice(mdev);
-		        	Set<PGN> pgns = new HashSet<PGN>();
-		        	
-		        try {
-		        	    pgns.add(new PGN(129029));
-		        	    pgns.add(new PGN(65488));
-		        	} catch(InvalidPGNException e) {
-		        		Log.i("ISOBLUE","Error while adding PGN to filter");
-		        	}
-		        	
+		    		
+			    		mHandler.obtainMessage(Map.SHOW_PROGRESSBOX,
+			    				-1, -1, "Connecting please wait..").sendToTarget();
+	
+					    //Creating the ISOBlueDevice initiates the connection with the ISOBlue
+			    		ibdevice = new ISOBlueDevice(mdev);
+			    		//all the sockets we want to send to handler
 		        		ArrayList<ISOBUSSocket> sockets = new  ArrayList<ISOBUSSocket>();
 						ISOBUSSocket impSocket, impBufSocket, engSocket, engBufSocket;
-					
+
+			    		//Prepare PGNs for filtering
+			        	Set<PGN> pgns = new HashSet<PGN>();
+			        	try {
+			        	    pgns.add(new PGN(129029));
+			        	    pgns.add(new PGN(65488));
+			        	} catch(InvalidPGNException e) {
+			        		Log.i("ISOBLUE","Error while adding PGN to filter");
+			        	}
+			        	
+			        	Serializable messageId = 0;
+			        	
+			        	//Assign Regular Sockets (realtime sockets)
 						impSocket = new ISOBUSSocket(ibdevice.getImplementBus(), null, pgns);
 						engSocket = new ISOBUSSocket(ibdevice.getEngineBus(), null, pgns);
 
-						Serializable messageId = 0;
-						ISOBUSSocket[] bufSockets = ibdevice.createBufferedISOBUSSockets(messageId); //only works after sending stuff
+						//Note: Possible bug in ISOBlue Library: only works after sending small packet of data first
+						ISOBUSSocket[] bufSockets = ibdevice.createBufferedISOBUSSockets(messageId); 
 						impBufSocket = bufSockets[1];
 						engBufSocket = bufSockets[0];
 						
@@ -141,12 +143,10 @@ public class BTAgent {
 						sockets.add(impBufSocket);
 						sockets.add(engBufSocket);
 
-						//Dispatch messages to Map 
+						//Dispatch sockets to Map Activity
 						mHandler.obtainMessage(Map.BEGIN_COMMUNICATE,
 								-1, -1, sockets).sendToTarget();
-						
-						org.isoblue.isobus.Message message = null;
-						
+						//Notify UI
 						mHandler.obtainMessage(Map.SHOW_TOAST,
 	         					-1, -1, "Connection Estabilished").sendToTarget();
 
@@ -165,16 +165,9 @@ public class BTAgent {
 		    }  
 		};
   	   	
-		
-
 		KONNECT.start();
-		
 		
 		return true;
 	}
-	
-	public void beginHandshake(){
-		
-	
-	}
+
 }

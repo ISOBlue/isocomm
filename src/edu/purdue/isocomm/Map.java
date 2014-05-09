@@ -27,7 +27,6 @@ package edu.purdue.isocomm;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.concurrent.TimeUnit;
 
 import org.isoblue.isobus.ISOBUSSocket;
 
@@ -36,7 +35,6 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
-import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
 
@@ -61,20 +59,16 @@ import edu.purdue.isocomm.GeoUtil;
 
 public class Map extends Activity {
 	private GoogleMap mMap;
-//	public HashMap<String, LatLng> places;
 	public static final int CONNECTION_SUCCESS = 1;
 	public static final int BEGIN_COMMUNICATE = 2;
 	public static final int SHOW_PROGRESSBOX = 3;
 	public static final int SHOW_TOAST = 4;
 	public static final int BEGIN_LOCAL_PLOT = 5;
 	public Menu myMenu;
-	public Polyline linePath, linePath2; 
-	public ArrayList<LatLng> gplist, gplist2;  //gplist contains all the GPS used to draw path
+	public Polyline polyPath_normal, polyPath_buffer; 
+	public ArrayList<LatLng> coords_normal, coords_buffer;  //coords_normal contains all the GPS used to draw path
 	public ArrayList<Marker> yieldMarkerList;
 	private ProgressDialog activeDialog;
-
-	
-	private ArrayList<IRecord> sqlstream_records;
 	public ISOBUSSocket imsock, engsock, imsock_b, engsock_b;
 	
 	private static double YIELD_MAX = 0.19;
@@ -82,10 +76,6 @@ public class Map extends Activity {
 	private static int PGN_GNSS = 129029;
 	private static int PGN_YIELD = 65488;
 
-	private ArrayList<org.isoblue.isobus.Message> gpsbuffer,gpsbuffer2; //gpsbuffer contains all the GPS messages to be decoded
-	private int gpsbuf_start, gpsbuf_start2;
-	private int gpsbuf_badstartcount = 0;
-	private int gpsbuf_badstartcount2 = 0;
 
 	private ColorMapper<Double> cmapper;
 
@@ -101,14 +91,7 @@ public class Map extends Activity {
 		setContentView(R.layout.activity_map);
 		
 		initMap();
-		//buffer the GPS coordinates for manipulation
-		gpsbuffer = new ArrayList<org.isoblue.isobus.Message>();
-		gpsbuffer2 = new ArrayList<org.isoblue.isobus.Message>();
-		
-		gpsbuf_start = 0;
-		gpsbuf_badstartcount = 0;
-		gpsbuf_start2 = 0;
-		gpsbuf_badstartcount2 = 0;
+
 
 		//loadFromSQLite();
 		cmapper = new ColorMapper<Double>((double) 0.15,YIELD_MAX);
@@ -164,9 +147,9 @@ public class Map extends Activity {
 						engsock_b = socks.get(3);
 						
 						 Thread n1 = new Thread(new Normal_Stream_Thread_EN());
-						 Thread n2 = new Thread(new GPSStream_Thread(imsock,gplist));
+						 Thread n2 = new Thread(new GPSStream_Thread(imsock,coords_normal));
 						 Thread n3 = new Thread(new Buffer_Stream_Thread_EN());
-						 Thread n4 = new Thread(new GPSStream_Thread(imsock_b,gplist2));
+						 Thread n4 = new Thread(new GPSStream_Thread(imsock_b,coords_buffer));
 
 						 n1.start();
 						 n2.start();
@@ -184,14 +167,14 @@ public class Map extends Activity {
 		private ISOBUSSocket sock;
 		private ArrayList<org.isoblue.isobus.Message> gpsbuffer;
 		private int gpsbuf_badstartcount,gpsbuf_start;
-		private ArrayList<LatLng> gplist;
+		private ArrayList<LatLng> coords_normal;
 		
 		public GPSStream_Thread(ISOBUSSocket s, ArrayList<LatLng> ugp){
 			this.sock = s;
 			this.gpsbuffer = new ArrayList<org.isoblue.isobus.Message>();
 			this.gpsbuf_badstartcount = 0;
 			this.gpsbuf_start = 0;
-			this.gplist = ugp;
+			this.coords_normal = ugp;
 		}
 		
 		@Override
@@ -251,22 +234,22 @@ public class Map extends Activity {
 						//compare coord with previous coord 
 						//filter out if they are closer than 100 meter
 
-						if(gplist.size() > 1){
-							LatLng pcoord = gplist.get(gplist.size() - 1);
+						if(coords_normal.size() > 1){
+							LatLng pcoord = coords_normal.get(coords_normal.size() - 1);
 
 							double ddist = GeoUtil.distanceInMeter(pcoord, coord);
 							if(ddist <= 100 && ddist > 0.5){
-								gplist.add(coord);
+								coords_normal.add(coord);
 							}
 						}else{
-							gplist.add(coord);
+							coords_normal.add(coord);
 						}
 
 						//Map UI Task
 						//Once GPS coordinate is ready, update it on map  
 						runOnUiThread(new Runnable() {
 				            public void run() {
-								linePath.setPoints(gplist);	
+								polyPath_normal.setPoints(coords_normal);	
 				            }
 				        });
 						
@@ -294,34 +277,25 @@ public class Map extends Activity {
 			while(true){
 				try{
 				message = engsock.read();
-				Log.i("SRAM","ENGSOCK READ");
 				if (message.getPgn().asInt() == PGN_YIELD){
 					final double result = dgrab.yieldData(message);
-					Log.i("postman","Yield data " + result);
-					
 					runOnUiThread(new Runnable() {
 			            public void run() {
-			            	
-			            	if(gplist.size() == 0){
+			            	if(coords_normal.size() == 0){
 			            		//if there no decoded GPS coordinate ready
 			            		//do nothing
 			            		return;
 			            	}
-			            	
-			            	//plot yield data at latest coordinate
-			            	//	markPlace(previous_coord, result + "");
-
 			            	int TRESHC = cmapper.map(result);
-			            	
 			            	//create new path, don't care about old one 
-			            	if(gplist.size() >= 5){
-			            		LatLng LatestCoord = gplist.get(gplist.size() - 1);
-			            		linePath = mMap.addPolyline(new PolylineOptions()
+			            	if(coords_normal.size() >= 5){
+			            		LatLng LatestCoord = coords_normal.get(coords_normal.size() - 1);
+			            		polyPath_normal = mMap.addPolyline(new PolylineOptions()
 					       	     .width(20)
 					       	     .color(TRESHC));	
-			            		//Clear gplist but retain latest coordinate for curve smoothness
-					       	gplist.clear();
-					       	gplist.add(LatestCoord);
+			            		//Clear coords_normal but retain latest coordinate for curve smoothness
+					       	coords_normal.clear();
+					       	coords_normal.add(LatestCoord);
 			            	}
 			            				            	
 			            }
@@ -359,29 +333,23 @@ public class Map extends Activity {
 					runOnUiThread(new Runnable() {
 			            public void run() {
 			            	
-			            	if(gplist2.size() == 0){
+			            	if(coords_buffer.size() == 0){
 			            		//if there no decoded GPS coordinate ready
-			            		//do nothing
 			            		return;
 			            	}
 
-			            	int TRESHC = cmapper.map(result);
+			            	int TRESHC = cmapper.map(result); //Color determined by cmapper
 			            	
-			            	if(gplist2.size() >= 5){
-			            	//create new path, don't care about old one 
-				            	linePath2 = mMap.addPolyline(new PolylineOptions()
+			            	if(coords_buffer.size() >= 5){
+			            		//create new path, don't care about old one 
+				            	polyPath_buffer = mMap.addPolyline(new PolylineOptions()
 					       	     .width(20)
 					       	     .color(TRESHC));
-				            	
-					       		 							            	
-				            	//Clear gplist but retain latest coordinate for curve smoothness
-				            	LatLng LatestCoord = gplist2.get(gplist2.size() - 1);
-					       		gplist2.clear();
-					       		gplist2.add(LatestCoord);
-				       		
+				            	//Clear coords_normal but retain latest coordinate for curve smoothness
+				            	LatLng LatestCoord = coords_buffer.get(coords_buffer.size() - 1);
+					       		coords_buffer.clear();
+					       		coords_buffer.add(LatestCoord);
 			            	}
-				       		
-			            	
 			            }
 			        });
 				
@@ -403,24 +371,24 @@ public class Map extends Activity {
 
 	private void initMap(){
 		
-		mMap = ((MapFragment) getFragmentManager().findFragmentById(R.id.map)).getMap(); //init map
-		mMap.setMapType(GoogleMap.MAP_TYPE_SATELLITE);
-		
-		 linePath = mMap.addPolyline(new PolylineOptions()
+		 mMap = ((MapFragment) getFragmentManager().findFragmentById(R.id.map)).getMap(); //init map
+		 mMap.setMapType(GoogleMap.MAP_TYPE_SATELLITE);
+		 
+		 //Initialize both buffer and normal polyline path to be gray
+		 polyPath_normal = mMap.addPolyline(new PolylineOptions()
+	     .width(20)
+	     .color(Color.GRAY));
+		 polyPath_buffer = mMap.addPolyline(new PolylineOptions()
 	     .width(20)
 	     .color(Color.GRAY));
 		 
-		 linePath2 = mMap.addPolyline(new PolylineOptions()
-	     .width(20)
-	     .color(Color.GRAY));
-		 
-		 gplist = new ArrayList<LatLng>();
-		 gplist2 = new ArrayList<LatLng>();
+		 coords_normal = new ArrayList<LatLng>();
+		 coords_buffer = new ArrayList<LatLng>();
 		 
 		 yieldMarkerList = new ArrayList<Marker>();
 		 
-		 linePath.setPoints(gplist);
-		 linePath2.setPoints(gplist2);
+		 polyPath_normal.setPoints(coords_normal);
+		 polyPath_buffer.setPoints(coords_buffer);
 
 		 mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(40.988075256347656, -86.1761245727539), 17.00f));
 	}
@@ -453,7 +421,7 @@ public class Map extends Activity {
 			devListbox.mContext = Map.this;
 			devListbox.setHandler(postman);
 			
-			//TODO: this could get a bit messy overtime, there may be more elegant way to accomplish this.
+			//TODO: Move to Handler
 			runOnUiThread(new Runnable() {
 	            public void run() {
 	            	devListbox.show(getFragmentManager(), "btdev"); 
@@ -464,7 +432,6 @@ public class Map extends Activity {
 	
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
-		
 		getMenuInflater().inflate(R.menu.map_actions, menu);
 		myMenu = menu;
 		return super.onCreateOptionsMenu(menu);
@@ -474,16 +441,13 @@ public class Map extends Activity {
 	 public boolean onOptionsItemSelected(MenuItem item) {
 	    	switch(item.getItemId()){
 	    		case R.id.action_history:
-
-
+	    			//No action assigned
 	    		break;
 	    		case R.id.action_search:
 	    			Handle_SearchDevice();
-	    			
 	    		break;
 	    		case R.id.action_sim:
-	    			postman.obtainMessage(Map.SHOW_TOAST,
-							-1, -1, "Toggle Numeric Yield").sendToTarget();
+	    			//No action assigned
 	    		break;
 	    	}
 	    	return true;

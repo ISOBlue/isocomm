@@ -1,5 +1,5 @@
 /*
- * Note: Not Intended for use in this feature-limited release (see other branch of this repository)
+ * Note: Feature removed (see past commit somewhere)
  * 
  * Author: Pat Sabpisal <ssabpisa@purdue.edu>
  *
