@@ -134,17 +134,17 @@ public class Map extends Activity {
 					
 				case BEGIN_COMMUNICATE:
 						
-						//UI Stuff
-						myMenu.getItem(2).setTitle("Live");
-						myMenu.getItem(2).setIcon(R.drawable.gdot2);
-						myMenu.getItem(2).setEnabled(false);	
+						 //UI Stuff
+						 myMenu.getItem(2).setTitle("Live");
+						 myMenu.getItem(2).setIcon(R.drawable.gdot2);
+						 myMenu.getItem(2).setEnabled(false);	
+						 
+						 ArrayList<ISOBUSSocket> socks = (ArrayList<ISOBUSSocket>)msg.obj;
 						
-						ArrayList<ISOBUSSocket> socks = (ArrayList<ISOBUSSocket>)msg.obj;
-						
-						imsock = socks.get(0);
-						engsock = socks.get(1);
-						imsock_b = socks.get(2);
-						engsock_b = socks.get(3);
+						 imsock = socks.get(0);
+						 engsock = socks.get(1);
+						 imsock_b = socks.get(2);
+						 engsock_b = socks.get(3);
 						
 						 Thread n1 = new Thread(new Normal_Stream_Thread_EN());
 						 Thread n2 = new Thread(new GPSStream_Thread(imsock,coords_normal));
@@ -167,14 +167,14 @@ public class Map extends Activity {
 		private ISOBUSSocket sock;
 		private ArrayList<org.isoblue.isobus.Message> gpsbuffer;
 		private int gpsbuf_badstartcount,gpsbuf_start;
-		private ArrayList<LatLng> coords_normal;
+		private ArrayList<LatLng> gplist;
 		
 		public GPSStream_Thread(ISOBUSSocket s, ArrayList<LatLng> ugp){
 			this.sock = s;
 			this.gpsbuffer = new ArrayList<org.isoblue.isobus.Message>();
 			this.gpsbuf_badstartcount = 0;
 			this.gpsbuf_start = 0;
-			this.coords_normal = ugp;
+			this.gplist = ugp;
 		}
 		
 		@Override
@@ -234,22 +234,22 @@ public class Map extends Activity {
 						//compare coord with previous coord 
 						//filter out if they are closer than 100 meter
 
-						if(coords_normal.size() > 1){
-							LatLng pcoord = coords_normal.get(coords_normal.size() - 1);
+						if(gplist.size() > 1){
+							LatLng pcoord = gplist.get(gplist.size() - 1);
 
 							double ddist = GeoUtil.distanceInMeter(pcoord, coord);
 							if(ddist <= 100 && ddist > 0.5){
-								coords_normal.add(coord);
+								gplist.add(coord);
 							}
 						}else{
-							coords_normal.add(coord);
+							gplist.add(coord);
 						}
 
 						//Map UI Task
 						//Once GPS coordinate is ready, update it on map  
 						runOnUiThread(new Runnable() {
 				            public void run() {
-								polyPath_normal.setPoints(coords_normal);	
+								polyPath_normal.setPoints(gplist);	
 				            }
 				        });
 						
