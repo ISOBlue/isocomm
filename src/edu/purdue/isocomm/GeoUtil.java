@@ -42,11 +42,11 @@ public class GeoUtil {
 	   }
 	   
 	   public static double distanceInMeter(LatLng x, LatLng y){
-		   double lat1 = x.latitude;
-		   double lat2 = y.latitude;
-		   double lon1 = x.longitude;
-		   double lon2 = y.longitude;
-		   double R = 6378.137; // Radius of earth in KM
+		    double lat1 = x.latitude;
+		    double lat2 = y.latitude;
+		    double lon1 = x.longitude;
+		    double lon2 = y.longitude;
+		    double R = 6378.137;
 		    double dLat = (lat2 - lat1) * Math.PI / 180;
 		    double dLon = (lon2 - lon1) * Math.PI / 180;
 		    double a = Math.sin(dLat/2) * Math.sin(dLat/2) +
