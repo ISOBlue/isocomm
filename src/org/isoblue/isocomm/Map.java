@@ -23,12 +23,14 @@
  * IN THE SOFTWARE.
  */
 
-package edu.purdue.isocomm;
+package org.isoblue.isocomm;
 
 import java.io.IOException;
 import java.util.ArrayList;
 
 import org.isoblue.isobus.ISOBUSSocket;
+import org.isoblue.isocomm.DataGrabber;
+import org.isoblue.isocomm.GeoUtil;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -53,9 +55,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.Window;
 import android.widget.Toast;
-
-import edu.purdue.isocomm.DataGrabber;
-import edu.purdue.isocomm.GeoUtil;
+import org.isoblue.isocomm.R;
 
 public class Map extends Activity {
 	private GoogleMap mMap;

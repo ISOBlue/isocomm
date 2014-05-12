@@ -25,7 +25,7 @@
  * IN THE SOFTWARE.
  */
 
-package edu.purdue.isocomm;
+package org.isoblue.isocomm;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
