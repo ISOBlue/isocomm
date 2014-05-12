@@ -1,4 +1,4 @@
-/* Note: Not Intended for use in this feature-limited release (see other branch of this repository)
+/* 
  *
  * Author: Pat Sabpisal <ssabpisa@purdue.edu>
  *
@@ -23,26 +23,35 @@
  * IN THE SOFTWARE.
  */
 
-package edu.purdue.isocomm;
+package org.isoblue.isocomm;
+
+import java.util.ArrayList;
 
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.DialogFragment;
+import android.bluetooth.BluetoothDevice;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.os.Bundle;
 import android.os.Handler;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
-import android.widget.ArrayAdapter;
-import android.widget.TextView;
 
-public class LegendDialog extends DialogFragment {
+//import org.isoblue.isocomm.NMEAUtil;
+
+public class DeviceSelectDialog extends DialogFragment {
+	public CharSequence[] items = null;
 	public Context mContext;
 	public Handler postman;
-	public String[] items = {"Yield Data","Moisture Density","Soil Conductivity","Combustibility"};
+	private ArrayList<BluetoothDevice> btdevices;
+	private BTAgent BTconnector;
+
+	public void bindToRealDevices(ArrayList<BluetoothDevice> b, BTAgent m){
+		btdevices = b;
+		BTconnector = m;
+	}
 	
 	public void setHandler(Handler h){
 		postman = h;
@@ -55,28 +64,15 @@ public class LegendDialog extends DialogFragment {
 	    
 	    LayoutInflater inflater = ((Activity) mContext).getLayoutInflater();
         final View modifview = inflater.inflate(R.layout.choose_device_title,null);
-        TextView titleX = (TextView)modifview.findViewById(R.id.textView1);
-        titleX.setText("Legends");
 	    builder.setCustomTitle(modifview);
 	    
 	    //TODO: Use builder.setView();
 	    builder.setItems(items, new DialogInterface.OnClickListener() {
 	    	
 	        public void onClick(DialogInterface dialog, int which) {
-	        	 Log.i("Legend Dialog","Not Ready");
+	        	BTconnector.getIBDevice(btdevices.get(which));
 	        }
 	    });
-	    
-	    builder.setAdapter(new ArrayAdapter<String>(getActivity(), R.layout.legend_listrow, R.id.legendTitle, items), 
-                new DialogInterface.OnClickListener(){
-            			@Override
-            			public void onClick(DialogInterface dialog, int item){
-            	
-            			}
-	    			});
-	    builder.setPositiveButton("Update Map", null);
-	    builder.setNegativeButton("Default", null);
-	    
 	    return builder.create();
 	}
 }

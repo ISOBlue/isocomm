@@ -23,7 +23,7 @@
  * IN THE SOFTWARE.
  */
 
-package edu.purdue.isocomm;
+package org.isoblue.isocomm;
 
 public class IRecord {
 	public int PGN;
