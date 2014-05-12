@@ -25,23 +25,8 @@
 
 package org.isoblue.isocomm;
 
-import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Set;
 
-import org.isoblue.isoblue.ISOBlueDevice;
-import org.isoblue.isobus.ISOBUSSocket;
-import org.isoblue.isobus.Message;
-import org.isoblue.isobus.PGN;
-import org.isoblue.isobus.PGN.InvalidPGNException;
-
-import com.google.android.gms.maps.GoogleMap;
-import com.google.android.gms.maps.MapFragment;
-import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.MarkerOptions;
-
-import org.isoblue.isocomm.R;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
@@ -51,10 +36,8 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.os.Bundle;
 import android.os.Handler;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
-import android.widget.Toast;
 
 //import org.isoblue.isocomm.NMEAUtil;
 
